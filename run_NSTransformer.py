@@ -42,18 +42,23 @@ def cross_validation(args, setting='v1'):
         model = Exp(args)  # set experiments
 
         # train val test
-        print(f'>>>>>>> start training: fold {fold} >>>>>>>>>>>>>>>>>>>>>>>>>>')
-        model.train(train_loader, val_loader)
+        # print(f'>>>>>>> start training: fold {fold} >>>>>>>>>>>>>>>>>>>>>>>>>>')
+        # model.train(train_loader, val_loader)
 
-        print(f'>>>>>>> testing <<<<<<<<<<<<')
-        model.test(test_loader)
+        # print(f'>>>>>>> testing <<<<<<<<<<<<')
+        # model.test(test_loader)
 
         print(f'>>>>>>> prediction <<<<<<<<<<<<')
         predictions = model.prediction(infer_loader)
         submission[f"fold_{fold}"] = predictions
         torch.cuda.empty_cache()
     
-    submission.to_csv(f"./result/{setting}/预测结果.csv", index=False)
+    # 计算每一行的众数
+    submission['label'] = submission.iloc[:, -5:].mode(axis=1).iloc[:, 0].astype(int)
+    submission = submission.iloc[:, :2]
+    
+    os.makedirs(f"./result/{setting}", exist_ok=True)
+    submission.to_csv(f"./results/{setting}/预测结果.csv", index=False)
 
 
 if __name__ == '__main__':

@@ -184,8 +184,11 @@ class Exp_Basic(object):
         f.close()
         return
 
-    def prediction(self, prediction_loader):
+    def prediction(self, prediction_loader, setting='v1'):
         # 加载模型
+        path = os.path.join(self.args.checkpoints, setting, f"fold{self.args.fold}")
+        best_model_path = path + '/' + 'checkpoint.pth'
+        self.model.load_state_dict(torch.load(best_model_path))
         
         # 预测
         preds = []
