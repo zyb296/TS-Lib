@@ -3,6 +3,7 @@ import torch
 import random
 import argparse
 import numpy as np
+import pandas as pd
 
 # from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
 # from exp.exp_imputation import Exp_Imputation
@@ -16,7 +17,7 @@ from sklearn.model_selection import StratifiedKFold
 from data_provider.cus_dataloader import MyDataLoader
 
 
-def cross_validation(args):
+def cross_validation(args, setting='v1'):
 
     skf = StratifiedKFold(n_splits=5, random_state=42, shuffle=True)
 
@@ -25,17 +26,14 @@ def cross_validation(args):
 
     infer_loader = dataloader.get_loader(mode='predict')
     y = dataloader.train_y
-
+    submission = pd.read_csv("/opt/Time-Series-Library/dataset/custom_dataset/测试集A/submit_example_A.csv")
+    
     for fold, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
         train_loader, val_loader = dataloader.get_loader(
             train_idx, mode='train', return_val=True)  # 20%用于val
         test_loader = dataloader.get_loader(test_idx, mode='test')
 
-        # for i, batch_data in enumerate(train_loader):
-        #     print(i)
-        #     print(batch_data[0].shape)
-        #     print(batch_data[1].shape)
-        #     break
+        args.fold = fold
 
         # backbone
 
@@ -47,11 +45,15 @@ def cross_validation(args):
         print(f'>>>>>>> start training: fold {fold} >>>>>>>>>>>>>>>>>>>>>>>>>>')
         model.train(train_loader, val_loader)
 
-        print(f'>>>>>>>testing <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+        print(f'>>>>>>> testing <<<<<<<<<<<<')
         model.test(test_loader)
 
-        # exp.infer(infer_loader)
+        print(f'>>>>>>> prediction <<<<<<<<<<<<')
+        predictions = model.prediction(infer_loader)
+        submission[f"fold_{fold}"] = predictions
         torch.cuda.empty_cache()
+    
+    submission.to_csv(f"./result/{setting}/预测结果.csv", index=False)
 
 
 if __name__ == '__main__':

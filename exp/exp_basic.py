@@ -87,7 +87,7 @@ class Exp_Basic(object):
         return total_loss
 
     def train(self, train_loader, val_loader=None, setting='v1'):
-        path = os.path.join(self.args.checkpoints, setting)
+        path = os.path.join(self.args.checkpoints, setting, f"fold{self.args.fold}")
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -127,16 +127,12 @@ class Exp_Basic(object):
                 nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=4.0)
                 self.optimizer.step()
 
-            print("Epoch: {} cost time: {}".format(
-                epoch + 1, time.time() - epoch_time))
+            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+            
+            # train and val loss
             train_loss = np.average(train_loss)
-
-            # validation loss
             val_loss = self.validation(val_loader)
-            # test_loss, test_accuracy = self.test(test_data, test_loader, criterion)
-
-            print(
-                f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.3f} Vali Loss: {val_loss:.3f}")
+            print(f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.3f} Vali Loss: {val_loss:.3f}")
 
             # early-stopping and asjust learning rate
             self.early_stopping(val_loss, self.model, path)
@@ -149,7 +145,7 @@ class Exp_Basic(object):
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
 
-    def test(self, test_loader):
+    def test(self, test_loader, setting='v1'):
         # 加载模型
         
         preds = []
@@ -174,7 +170,6 @@ class Exp_Basic(object):
         accuracy = cal_accuracy(predictions, trues)
 
         # result save
-        setting = 'v1'
         folder_path = './results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
@@ -189,8 +184,26 @@ class Exp_Basic(object):
         f.close()
         return
 
-    def infer(self):
-        pass
+    def prediction(self, prediction_loader):
+        # 加载模型
+        
+        # 预测
+        preds = []
+        
+        self.model.eval()
+        with torch.no_grad():
+            for i, batch_data in enumerate(prediction_loader):
+                # ------- one batch ------------
+                label, outputs = self.prediction_step(batch_data)
+                # -----------------------------
+                preds.append(outputs.detach())
+        
+        preds = torch.cat(preds, 0)
+        print('prediction shape:', preds.shape)
+        
+        probs = torch.nn.functional.softmax(preds)  # (total_samples, num_classes) est. prob. for each class and sample
+        predictions = torch.argmax(probs, dim=1).cpu().numpy()
+        return predictions
 
     def training_step(self, batch_data):
         batch_x, label = batch_data
@@ -224,7 +237,7 @@ class Exp_Basic(object):
         return label, outputs
 
     def prediction_step(self, batch_data):
-        pass
+        return self.test_step(batch_data)
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.model.parameters(),

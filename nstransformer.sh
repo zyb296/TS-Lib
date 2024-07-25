@@ -8,7 +8,7 @@ python -u run_NSTransformer.py \
   --seq_len 180 \
   --enc_in 2 \
   --e_layers 2 \
-  --batch_size 32 \
+  --batch_size 64 \
   --d_model 16 \
   --d_ff 64 \
   --learning_rate 0.001 \
