@@ -43,15 +43,15 @@ def cross_validation(args, setting='v1'):
         model = Exp(args)  # set experiments
 
         # train val test
-        # print(f'>>>>>>> start training: fold {fold} >>>>>>>>>>>>>>>>>>>>>>>>>>')
-        # model.train(train_loader, val_loader)
+        print(f'>>>>>>> start training: fold {fold} >>>>>>>>>>>>>>>>>>>>>>>>>>')
+        model.train(train_loader, val_loader)
 
-        # print(f'>>>>>>> testing <<<<<<<<<<<<')
-        # model.test(test_loader)
+        print(f'>>>>>>> testing <<<<<<<<<<<<')
+        model.test(test_loader)
 
-        print(f'>>>>>>> prediction <<<<<<<<<<<<')
-        predictions = model.prediction(infer_loader)
-        submission[f"fold_{fold}"] = predictions
+        # print(f'>>>>>>> prediction <<<<<<<<<<<<')
+        # predictions = model.prediction(infer_loader)
+        # submission[f"fold_{fold}"] = predictions
         torch.cuda.empty_cache()
     
     # 计算每一行的众数
@@ -71,6 +71,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='NSTransformer')
 
     # basic config
+    parser.add_argument("--setting", type=str, default="模型版本")
     parser.add_argument('--task_name', type=str, required=True, default='long_term_forecast',
                         help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
     parser.add_argument('--model', type=str, required=True, default='Autoformer',

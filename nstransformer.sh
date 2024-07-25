@@ -8,9 +8,12 @@ python -u run_NSTransformer.py \
   --seq_len 180 \
   --enc_in 2 \
   --e_layers 2 \
-  --batch_size 64 \
+  --p_hidden_dims 64 64 \
+  --p_hidden_layers 2 \
   --d_model 16 \
   --d_ff 64 \
+   --batch_size 64 \
   --learning_rate 0.001 \
   --train_epochs 30 \
-  --patience 10
+  --patience 10 \
+  --setting v1

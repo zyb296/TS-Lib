@@ -145,7 +145,8 @@ class Exp_Basic(object):
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
 
-    def test(self, test_loader, setting='v1'):
+    def test(self, test_loader):
+        setting = self.args.setting
         # 加载模型
         
         preds = []
@@ -177,7 +178,7 @@ class Exp_Basic(object):
         print('accuracy:{}'.format(accuracy))
         file_name='result_classification.txt'
         f = open(os.path.join(folder_path,file_name), 'a')
-        f.write(setting + "  \n")
+        f.write(f"{setting}  fold {self.args.fold}" + "  \n")
         f.write('accuracy:{}'.format(accuracy))
         f.write('\n')
         f.write('\n')
