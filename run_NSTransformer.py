@@ -26,7 +26,8 @@ def cross_validation(args, setting='v1'):
 
     infer_loader = dataloader.get_loader(mode='predict')
     y = dataloader.train_y
-    submission = pd.read_csv("/opt/Time-Series-Library/dataset/custom_dataset/测试集A/submit_example_A.csv")
+    print(os.getcwd())
+    submission = pd.read_csv("./dataset/custom_dataset/测试集A/submit_example_A.csv")
     
     for fold, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
         train_loader, val_loader = dataloader.get_loader(

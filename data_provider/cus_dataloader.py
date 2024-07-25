@@ -36,8 +36,9 @@ def data_normal(data):
 class MyDataLoader:
     def __init__(self, args) -> None:
         self.args = args
-
-        data_path = "/opt/Time-Series-Library/dataset/custom_dataset"
+        # print(os.getcwd())
+        # data_path = os.path.join(os.getcwd(), 'dataset')
+        data_path = "./dataset/custom_dataset/"
 
         self.train_x = np.load(os.path.join(data_path, "训练集/train_x.npy"))
         self.train_y = np.load(os.path.join(data_path, "训练集/train_y.npy"))
