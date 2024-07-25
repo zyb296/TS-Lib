@@ -1,0 +1,232 @@
+import os
+import time
+import torch
+import numpy as np
+from torch import optim
+import torch.nn as nn
+from tqdm import tqdm
+from utils.tools import EarlyStopping, adjust_learning_rate, cal_accuracy
+
+from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer, DLinear, FEDformer, \
+    Informer, LightTS, Reformer, ETSformer, Pyraformer, PatchTST, MICN, Crossformer, FiLM, iTransformer, \
+    Koopa, TiDE, FreTS, TimeMixer, TSMixer, SegRNN, MambaSimple
+
+
+class Exp_Basic(object):
+    def __init__(self, args):
+        self.args = args
+        self.model_dict = {
+            'TimesNet': TimesNet,
+            'Autoformer': Autoformer,
+            'Transformer': Transformer,
+            'Nonstationary_Transformer': Nonstationary_Transformer,
+            'DLinear': DLinear,
+            'FEDformer': FEDformer,
+            'Informer': Informer,
+            'LightTS': LightTS,
+            'Reformer': Reformer,
+            'ETSformer': ETSformer,
+            'PatchTST': PatchTST,
+            'Pyraformer': Pyraformer,
+            'MICN': MICN,
+            'Crossformer': Crossformer,
+            'FiLM': FiLM,
+            'iTransformer': iTransformer,
+            'Koopa': Koopa,
+            'TiDE': TiDE,
+            'FreTS': FreTS,
+            'MambaSimple': MambaSimple,
+            # 'Mamba': Mamba,
+            'TimeMixer': TimeMixer,
+            'TSMixer': TSMixer,
+            'SegRNN': SegRNN
+        }
+        self.device = self._acquire_device()
+        self.model = self._build_model().to(self.device)
+        self.loss_func = nn.CrossEntropyLoss()
+        self.optimizer = self.configure_optimizers()
+        self.early_stopping = EarlyStopping(
+            patience=self.args.patience, verbose=True)
+
+    def _build_model(self):
+        model = self.model_dict[self.args.model].Model(self.args).float()
+        return model
+
+    def _acquire_device(self):
+
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+        elif torch.backends.mps.is_available():
+            
+            device = torch.device("mps")
+        else:
+            device = torch.device("cpu")
+
+        # if self.args.use_gpu:
+        #     os.environ["CUDA_VISIBLE_DEVICES"] = str(
+        #         self.args.gpu) if not self.args.use_multi_gpu else self.args.devices
+        #     device = torch.device('cuda:{}'.format(self.args.gpu))
+        #     print('Use GPU: cuda:{}'.format(self.args.gpu))
+        # else:
+        #     device = torch.device('cpu')
+        #     print('Use CPU')
+        return device
+
+    def validation(self, val_laoder):
+        total_loss = []
+        self.model.eval()
+        with torch.no_grad():
+            for i, batch_data in enumerate(val_laoder):
+                # ------- one batch ------------
+                loss = self.validation_step(batch_data)
+                # -----------------------------
+                total_loss.append(loss)
+        total_loss = np.average(total_loss)
+
+        self.model.train()
+        return total_loss
+
+    def train(self, train_loader, val_loader=None, setting='v1'):
+        path = os.path.join(self.args.checkpoints, setting)
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        time_now = time.time()
+
+        train_steps = len(train_loader)
+
+        for epoch in range(self.args.train_epochs):
+            iter_count = 0
+            train_loss = []
+
+            self.model.train()
+
+            epoch_time = time.time()
+            for i, batch_data in enumerate(train_loader):
+                iter_count += 1
+                self.optimizer.zero_grad()
+
+                # --------- 一个batch ---------
+                loss = self.training_step(batch_data)
+                # -----------------------------
+
+                train_loss.append(loss.item())
+
+                if (i + 1) % 100 == 0:
+                    print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(
+                        i + 1, epoch + 1, loss.item()))
+                    speed = (time.time() - time_now) / iter_count
+                    left_time = speed * \
+                        ((self.args.train_epochs - epoch) * train_steps - i)
+                    print(
+                        '\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+                    iter_count = 0
+                    time_now = time.time()
+
+                loss.backward()
+                nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=4.0)
+                self.optimizer.step()
+
+            print("Epoch: {} cost time: {}".format(
+                epoch + 1, time.time() - epoch_time))
+            train_loss = np.average(train_loss)
+
+            # validation loss
+            val_loss = self.validation(val_loader)
+            # test_loss, test_accuracy = self.test(test_data, test_loader, criterion)
+
+            print(
+                f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.3f} Vali Loss: {val_loss:.3f}")
+
+            # early-stopping and asjust learning rate
+            self.early_stopping(val_loss, self.model, path)
+            if self.early_stopping.early_stop:
+                print("Early stopping")
+                break
+            if (epoch + 1) % 5 == 0:
+                adjust_learning_rate(self.optimizer, epoch + 1, self.args)
+
+        best_model_path = path + '/' + 'checkpoint.pth'
+        self.model.load_state_dict(torch.load(best_model_path))
+
+    def test(self, test_loader):
+        # 加载模型
+        
+        preds = []
+        trues = []
+        
+        self.model.eval()
+        with torch.no_grad():
+            for i, batch_data in enumerate(test_loader):
+                # ------- one batch ------------
+                label, outputs = self.test_step(batch_data)
+                # -----------------------------
+                preds.append(outputs.detach())
+                trues.append(label)
+        
+        preds = torch.cat(preds, 0)
+        trues = torch.cat(trues, 0)
+        print('test shape:', preds.shape, trues.shape)
+        
+        probs = torch.nn.functional.softmax(preds)  # (total_samples, num_classes) est. prob. for each class and sample
+        predictions = torch.argmax(probs, dim=1).cpu().numpy()  # (total_samples,) int class index for each sample
+        trues = trues.flatten().cpu().numpy()
+        accuracy = cal_accuracy(predictions, trues)
+
+        # result save
+        setting = 'v1'
+        folder_path = './results/' + setting + '/'
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        print('accuracy:{}'.format(accuracy))
+        file_name='result_classification.txt'
+        f = open(os.path.join(folder_path,file_name), 'a')
+        f.write(setting + "  \n")
+        f.write('accuracy:{}'.format(accuracy))
+        f.write('\n')
+        f.write('\n')
+        f.close()
+        return
+
+    def infer(self):
+        pass
+
+    def training_step(self, batch_data):
+        batch_x, label = batch_data
+        batch_x = batch_x.float().to(self.device)
+        # padding_mask = padding_mask.float().to(self.device)
+        label = label.to(self.device)
+        # print(batch_x.shape)
+
+        outputs = self.model(batch_x, None, None, None)
+        loss = self.loss_func(outputs, label.long().squeeze(-1))
+        return loss
+
+    def validation_step(self, batch_data):
+        batch_x, label = batch_data
+        batch_x = batch_x.float().to(self.device)
+        # padding_mask = padding_mask.float().to(self.device)
+        label = label.to(self.device)
+
+        outputs = self.model(batch_x, None, None, None)
+
+        pred = outputs.detach().cpu()
+        loss = self.loss_func(pred, label.long().squeeze().cpu())
+        return loss
+
+    def test_step(self, batch_data):
+        batch_x, label = batch_data
+        batch_x = batch_x.float().to(self.device)
+        # padding_mask = padding_mask.float().to(self.device)
+        label = label.to(self.device)
+        outputs = self.model(batch_x, None, None, None)
+        return label, outputs
+
+    def prediction_step(self, batch_data):
+        pass
+
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.model.parameters(),
+                               lr=self.args.learning_rate)
+        return optimizer

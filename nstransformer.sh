@@ -1,0 +1,16 @@
+python -u run_NSTransformer.py \
+  --task_name classification \
+  --root_path ./dataset/Heartbeat/ \
+  --model_id Heartbeat \
+  --model Nonstationary_Transformer \
+  --data UEA \
+  --num_class 3 \
+  --seq_len 180 \
+  --enc_in 2 \
+  --e_layers 2 \
+  --batch_size 32 \
+  --d_model 16 \
+  --d_ff 64 \
+  --learning_rate 0.001 \
+  --train_epochs 30 \
+  --patience 10
