@@ -27,8 +27,9 @@ def cross_validation(args, setting='v1'):
     infer_loader = dataloader.get_loader(mode='predict')
     y = dataloader.train_y
     print(os.getcwd())
-    submission = pd.read_csv("./dataset/custom_dataset/测试集A/submit_example_A.csv")
-    
+    submission = pd.read_csv(
+        "./dataset/custom_dataset/测试集A/submit_example_A.csv")
+
     for fold, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
         train_loader, val_loader = dataloader.get_loader(
             train_idx, mode='train', return_val=True)  # 20%用于val
@@ -43,7 +44,8 @@ def cross_validation(args, setting='v1'):
         model = Exp(args)  # set experiments
 
         # train val test
-        print(f'>>>>>>> start training: fold {fold} >>>>>>>>>>>>>>>>>>>>>>>>>>')
+        print(
+            f'>>>>>>> start training: fold {fold} >>>>>>>>>>>>>>>>>>>>>>>>>>')
         model.train(train_loader, val_loader)
 
         print(f'>>>>>>> testing <<<<<<<<<<<<')
@@ -53,11 +55,12 @@ def cross_validation(args, setting='v1'):
         # predictions = model.prediction(infer_loader)
         # submission[f"fold_{fold}"] = predictions
         torch.cuda.empty_cache()
-    
+
     # 计算每一行的众数
-    submission['label'] = submission.iloc[:, -5:].mode(axis=1).iloc[:, 0].astype(int)
+    submission['label'] = submission.iloc[:, -
+                                          5:].mode(axis=1).iloc[:, 0].astype(int)
     submission = submission.iloc[:, :2]
-    
+
     os.makedirs(f"./result/{setting}", exist_ok=True)
     submission.to_csv(f"./results/{setting}/预测结果.csv", index=False)
 
@@ -71,6 +74,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='NSTransformer')
 
     # basic config
+    parser.add_argument("--log_dir", type=str, default='./log', help="日志记录路径")
     parser.add_argument("--setting", type=str, default="模型版本")
     parser.add_argument('--task_name', type=str, required=True, default='long_term_forecast',
                         help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
@@ -133,7 +137,8 @@ if __name__ == '__main__':
                         help='early stopping patience')
     parser.add_argument('--learning_rate', type=float,
                         default=0.0001, help='optimizer learning rate')
-    parser.add_argument('--lradj', type=str, default='type1', help='adjust learning rate')
+    parser.add_argument('--lradj', type=str, default='type1',
+                        help='adjust learning rate')
     parser.add_argument('--loss', type=str, default='MSE',
                         help='loss function')
 

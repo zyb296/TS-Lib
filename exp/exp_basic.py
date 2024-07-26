@@ -56,7 +56,7 @@ class Exp_Basic(object):
     
     def _tensorboard_logger(self):
         """初始化tensorboard的writer"""
-        log_path = f"/root/tf-logs/{self.args.setting}/fold{self.args.fold}"
+        log_path = os.path.join(self.args.log_dir, f"{self.args.setting}/fold{self.args.fold}")
         os.makedirs(log_path, exist_ok=True)
         self.writer = SummaryWriter(log_path)
 
@@ -102,6 +102,7 @@ class Exp_Basic(object):
         time_now = time.time()
 
         train_steps = len(train_loader)
+        global_step = 0
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0
@@ -121,28 +122,28 @@ class Exp_Basic(object):
                 train_loss.append(loss.item())
 
                 if (i + 1) % 100 == 0:
-                    print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(
-                        i + 1, epoch + 1, loss.item()))
+                    print(f"\titers: {i + 1}, epoch: {epoch + 1} | loss: {loss.item():.7f}")
                     speed = (time.time() - time_now) / iter_count
-                    left_time = speed * \
-                        ((self.args.train_epochs - epoch) * train_steps - i)
-                    print(
-                        '\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+                    left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
+                    print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
                     iter_count = 0
                     time_now = time.time()
 
                 loss.backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=4.0)
                 self.optimizer.step()
-
+                # 记录 train loss
+                global_step += 1
+                if global_step % 20 == 0:  # 每20个step记录一次train loss
+                    self.writer.add_scalar("Loss/train", loss.item(), global_step)
+                
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             
             # train and val loss
             train_loss = np.average(train_loss)
             val_loss = self.validation(val_loader)
             print(f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.3f} Vali Loss: {val_loss:.3f}")
-            self.writer.add_scalar("Loss/train", train_loss, epoch)
-            self.writer.add_scalar("Loss/val", val_loss, epoch)
+            self.writer.add_scalar("Loss/val", val_loss, global_step)
             
             # early-stopping and asjust learning rate
             self.early_stopping(val_loss, self.model, path)

@@ -3,6 +3,7 @@ python -u run_NSTransformer.py \
   --root_path ./dataset/Heartbeat/ \
   --model_id Heartbeat \
   --model Nonstationary_Transformer \
+  --log_dir ./log \
   --data UEA \
   --num_class 3 \
   --seq_len 180 \
