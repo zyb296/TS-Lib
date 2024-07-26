@@ -15,6 +15,8 @@ from utils.print_args import print_args
 
 from sklearn.model_selection import StratifiedKFold
 from data_provider.cus_dataloader import MyDataLoader
+from utils.my_logger import Logger
+from utils.tools import create_version_folder, _set_logger
 
 
 def cross_validation(args, setting='v1'):
@@ -27,15 +29,20 @@ def cross_validation(args, setting='v1'):
     infer_loader = dataloader.get_loader(mode='predict')
     y = dataloader.train_y
     print(os.getcwd())
-    submission = pd.read_csv(
-        "./dataset/custom_dataset/测试集A/submit_example_A.csv")
+    submission = pd.read_csv("./dataset/custom_dataset/测试集A/submit_example_A.csv")
+    
+    args.version_path = create_version_folder("./log")
+    print("version path: ", args.version_path)
+    logger = _set_logger(args)
+    args.logger = logger
 
+    accuracy_list = []
     for fold, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
-        train_loader, val_loader = dataloader.get_loader(
-            train_idx, mode='train', return_val=True)  # 20%用于val
+        train_loader, val_loader = dataloader.get_loader(train_idx, mode='train', return_val=True)  # 20%用于val
         test_loader = dataloader.get_loader(test_idx, mode='test')
 
         args.fold = fold
+        logger.info(f"=================== fold {fold} ===================")
 
         # backbone
 
@@ -44,18 +51,19 @@ def cross_validation(args, setting='v1'):
         model = Exp(args)  # set experiments
 
         # train val test
-        print(
-            f'>>>>>>> start training: fold {fold} >>>>>>>>>>>>>>>>>>>>>>>>>>')
+        logger.info(f'>>>>>>> start training <<<<<<<<<<<<')
         model.train(train_loader, val_loader)
 
-        print(f'>>>>>>> testing <<<<<<<<<<<<')
-        model.test(test_loader)
+        logger.info(f'>>>>>>> start testing <<<<<<<<<<<<')
+        accuracy = model.test(test_loader)
+        accuracy_list.append(accuracy)
 
         # print(f'>>>>>>> prediction <<<<<<<<<<<<')
         # predictions = model.prediction(infer_loader)
         # submission[f"fold_{fold}"] = predictions
         torch.cuda.empty_cache()
 
+    logger.info(f"平均accuracy: {np.mean(accuracy_list)}")
     # 计算每一行的众数
     submission['label'] = submission.iloc[:, -
                                           5:].mode(axis=1).iloc[:, 0].astype(int)

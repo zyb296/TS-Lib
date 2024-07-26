@@ -23,14 +23,13 @@ class Logger:
         self.logger.setLevel(self.level_relations.get(level))  # 设置日志级别
 
         # 输出到控制台
-        sh = logging.StreamHandler(sys.stdout)  # 往屏幕上输出
-        sh.setFormatter(format_str)  # 设置屏幕上显示的格式
-        self.logger.addHandler(sh)  # 把对象加到logger里
+        # sh = logging.StreamHandler(sys.stdout)  # 往屏幕上输出
+        # sh.setFormatter(format_str)  # 设置屏幕上显示的格式
+        # self.logger.addHandler(sh)  # 把对象加到logger里
 
         # 输出到文件
         # 1 按照文件大小分割日志文件,一旦达到指定的大小重新生成文件 10MB
-        file_handler = handlers.RotatingFileHandler(
-            filename=filename, maxBytes=1024 * 1024 * 10, backupCount=backCount)
+        file_handler = handlers.RotatingFileHandler(filename=filename, maxBytes=1024 * 1024 * 10, backupCount=backCount)
         # 2 日志文件按天进行保存，每天一个日志文件
         # file_handler = handlers.TimedRotatingFileHandler(filename=filename, when='s', backupCount=1, encoding='utf-8')
         file_handler.setLevel(self.level_relations.get(level))

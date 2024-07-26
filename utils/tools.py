@@ -5,6 +5,7 @@ import torch
 import matplotlib.pyplot as plt
 import pandas as pd
 import math
+from utils.my_logger import Logger
 
 plt.switch_backend('agg')
 
@@ -116,3 +117,57 @@ def adjustment(gt, pred):
 
 def cal_accuracy(y_pred, y_true):
     return np.mean(y_pred == y_true)
+
+def create_version_folder(log_dir):
+    # 检查日志文件夹是否存在
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    # 获取所有文件夹名称
+    folders = [f for f in os.listdir(log_dir) if os.path.isdir(os.path.join(log_dir, f))]
+    
+    # 过滤出版本文件夹
+    version_folders = [f for f in folders if f.startswith('version')]
+    
+    if not version_folders:
+        # 如果没有版本文件夹，创建version1
+        new_version = 'version1'
+    else:
+        # 获取所有版本号
+        version_numbers = [int(f.replace('version', '')) for f in version_folders]
+        
+        # 找到最大版本号
+        max_version = max(version_numbers)
+        
+        # 创建新的版本文件夹
+        new_version = f'version{max_version + 1}'
+    
+    # 创建新的版本文件夹路径
+    new_version_path = os.path.join(log_dir, new_version)
+    os.makedirs(new_version_path, exist_ok=True)
+    
+    return new_version_path
+
+def _set_logger(args):
+    """logger, 记录各种日志, 打印训练参数"""
+    os.makedirs("./log", exist_ok=True)
+    
+    log_file = os.path.join('./log', f'{args.model}-{args.task_name}.log')
+    log = Logger(log_file, level='debug')
+    logger = log.get_logger()
+    
+    # 打印参数
+    v = args.version_path.split("/")[-1]
+    logger.info('\n')
+    logger.info('\n')
+    logger.info(f"#################################### {v} ####################################")
+    logger.info("\t" + "Basic Config" + "\t")
+    logger.info(f'  {"Model ID:":<20}{args.model_id:<20}{"Model:":<20}{args.model:<20}')
+    logger.info('\n')
+
+    logger.info("\t" + "Data Loader" + "\t")
+    logger.info(f'  {"Data:":<20}{args.data:<20}{"Root Path:":<20}{args.root_path:<20}')
+    logger.info(f'  {"Checkpoints:":<20}{args.checkpoints:<20}')
+    logger.info('\n')
+    
+    return logger

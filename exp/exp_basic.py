@@ -46,8 +46,9 @@ class Exp_Basic(object):
         self.model = self._build_model().to(self.device)
         self.loss_func = nn.CrossEntropyLoss()
         self.optimizer = self.configure_optimizers()
-        self.early_stopping = EarlyStopping(
-            patience=self.args.patience, verbose=True)
+        self.early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
+        self.logger = args.logger
+        # self.logger.info(f"version path: {self.args.version_path}")
         self._tensorboard_logger()
 
     def _build_model(self):
@@ -56,9 +57,15 @@ class Exp_Basic(object):
     
     def _tensorboard_logger(self):
         """初始化tensorboard的writer"""
-        log_path = os.path.join(self.args.log_dir, f"{self.args.setting}/fold{self.args.fold}")
+        # log_path = os.path.join(self.args.log_dir, f"{self.args.setting}/fold{self.args.fold}")
+        
+        # log_path = os.path.join(self.args.version_path, f"fold{self.args.fold}")  # 本机路径
+        log_path = os.path.join("/root/tf-logs", self.args.version_path, f"fold{self.args.fold}")  # autodl路径
+        
+        # self.logger.info(f"tensorboard path: {log_path}")
         os.makedirs(log_path, exist_ok=True)
         self.writer = SummaryWriter(log_path)
+        # os.system(f"cp -r {self.args.version_path} /root/tf-logs/")
 
     def _acquire_device(self):
 
@@ -95,9 +102,10 @@ class Exp_Basic(object):
         return total_loss
 
     def train(self, train_loader, val_loader=None, setting='v1'):
-        path = os.path.join(self.args.checkpoints, setting, f"fold{self.args.fold}")
-        if not os.path.exists(path):
-            os.makedirs(path)
+        # 模型权重路径
+        check_point_path = os.path.join(self.args.version_path, f"fold{self.args.fold}")
+        if not os.path.exists(check_point_path):
+            os.makedirs(check_point_path)
 
         time_now = time.time()
 
@@ -146,14 +154,17 @@ class Exp_Basic(object):
             self.writer.add_scalar("Loss/val", val_loss, global_step)
             
             # early-stopping and asjust learning rate
-            self.early_stopping(val_loss, self.model, path)
+            self.early_stopping(val_loss, self.model, check_point_path)
             if self.early_stopping.early_stop:
                 print("Early stopping")
                 break
             if (epoch + 1) % 5 == 0:
                 adjust_learning_rate(self.optimizer, epoch + 1, self.args)
 
-        best_model_path = path + '/' + 'checkpoint.pth'
+        # best_model_path = path + '/' + 'checkpoint.pth'
+        # check_point_path = os.path.join(self.args.version_path, f"fold{self.args.fold}")
+        # os.makedirs(check_point_path, exist_ok=True)
+        best_model_path = os.path.join(check_point_path, 'checkpoint.pth') 
         self.model.load_state_dict(torch.load(best_model_path))
 
     def test(self, test_loader):
@@ -186,15 +197,15 @@ class Exp_Basic(object):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
-        print('accuracy:{}'.format(accuracy))
-        file_name='result_classification.txt'
-        f = open(os.path.join(folder_path,file_name), 'a')
-        f.write(f"{setting}  fold {self.args.fold}" + "  \n")
-        f.write('accuracy:{}'.format(accuracy))
-        f.write('\n')
-        f.write('\n')
-        f.close()
-        return
+        self.logger.info('accuracy:{}'.format(accuracy))
+        # file_name='result_classification.txt'
+        # f = open(os.path.join(folder_path,file_name), 'a')
+        # f.write(f"{setting}  fold {self.args.fold}" + "  \n")
+        # f.write('accuracy:{}'.format(accuracy))
+        # f.write('\n')
+        # f.write('\n')
+        # f.close()
+        return accuracy
 
     def prediction(self, prediction_loader, setting='v1'):
         # 加载模型
