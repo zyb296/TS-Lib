@@ -6,6 +6,7 @@ from torch import optim
 import torch.nn as nn
 from tqdm import tqdm
 from utils.tools import EarlyStopping, adjust_learning_rate, cal_accuracy
+from torch.utils.tensorboard import SummaryWriter
 
 from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer, DLinear, FEDformer, \
     Informer, LightTS, Reformer, ETSformer, Pyraformer, PatchTST, MICN, Crossformer, FiLM, iTransformer, \
@@ -47,10 +48,17 @@ class Exp_Basic(object):
         self.optimizer = self.configure_optimizers()
         self.early_stopping = EarlyStopping(
             patience=self.args.patience, verbose=True)
+        self._tensorboard_logger()
 
     def _build_model(self):
         model = self.model_dict[self.args.model].Model(self.args).float()
         return model
+    
+    def _tensorboard_logger(self):
+        """初始化tensorboard的writer"""
+        log_path = f"/root/tf-logs/{self.args.setting}/fold{self.args.fold}"
+        os.makedirs(log_path, exist_ok=True)
+        self.writer = SummaryWriter(log_path)
 
     def _acquire_device(self):
 
@@ -133,7 +141,9 @@ class Exp_Basic(object):
             train_loss = np.average(train_loss)
             val_loss = self.validation(val_loader)
             print(f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.3f} Vali Loss: {val_loss:.3f}")
-
+            self.writer.add_scalar("Loss/train", train_loss, epoch)
+            self.writer.add_scalar("Loss/val", val_loss, epoch)
+            
             # early-stopping and asjust learning rate
             self.early_stopping(val_loss, self.model, path)
             if self.early_stopping.early_stop:
