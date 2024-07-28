@@ -28,8 +28,10 @@ class spO2_HerarRate_Dataset(Dataset):
 
 
 def data_normal(data):
-    mean = data.mean(axis=(0, 2), keepdims=True)
-    std = data.std(axis=(0, 2), keepdims=True) + 1e-5
+    # mean = data.mean(axis=(0, 2), keepdims=True)
+    # std = data.std(axis=(0, 2), keepdims=True) + 1e-5
+    mean = data.mean(axis=(0, 1), keepdims=True)
+    std = data.std(axis=(0, 1), keepdims=True) + 1e-5
     return (data - mean) / std
 
 
@@ -49,11 +51,18 @@ class MyDataLoader:
         total_index = zero_index[:num_zero] + \
             list(np.where(self.train_y != 0)[0])
         np.random.shuffle(total_index)
-        self.train_x = self.train_x[total_index].reshape(-1, 180, 2)
+        self.train_x = self.train_x[total_index]
+        # self.train_x = self.train_x.reshape(-1, 180, 2) 
+        self.train_x = np.transpose(self.train_x, (0, 2, 1))
+        # self.train_x = np.concatenate((self.train_x, (self.train_x[:, :, 0] / self.train_x[:, :, 1])[..., np.newaxis]), axis=-1)  # 增加维度
+        
         self.train_y = self.train_y[total_index]
 
-        self.test_x = np.load(os.path.join(
-            data_path, "测试集A/test_x_A.npy")).reshape(-1, 180, 2)
+        self.test_x = np.load(os.path.join(data_path, "测试集A/test_x_A.npy"))
+        # self.test_x = self.test_x.reshape(-1, 180, 2)
+        self.test_x = np.transpose(self.test_x, (0, 2, 1))
+        # self.test_x = np.concatenate((self.test_x, (self.test_x[:, :, 0] / self.test_x[:, :, 1])[..., np.newaxis]), axis=-1)  # 增加维度
+        
         self.submission = pd.read_csv(os.path.join(
             data_path, "测试集A/submit_example_A.csv"))
 
@@ -127,3 +136,14 @@ class MyDataLoader:
                                         # collate_fn=lambda x: collate_fn(x, max_len=self.args.seq_len),
                                         )
             return predict_loader
+        
+        
+class PretrainLoader:
+    def __init__(self, args):
+        self.args = args
+        
+        data_path = "./dataset/custom_dataset/"
+
+        self.train_x = np.load(os.path.join(data_path, "训练集/train_x.npy"))
+        self.train_y = np.load(os.path.join(data_path, "训练集/train_y.npy"))
+        self.test_x = np.load(os.path.join(data_path, "测试集A/test_x_A.npy")).reshape(-1, 180, 2)
