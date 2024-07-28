@@ -1,5 +1,6 @@
 from data_provider.uea import collate_fn
 import os
+import gc
 import torch
 import numpy as np
 import pandas as pd
@@ -106,7 +107,7 @@ class MyDataLoader:
                 data = data_normal(data)
                 train_dataset = spO2_HerarRate_Dataset(data, label)
                 train_loader = DataLoader(train_dataset,
-                                          batch_size=64,
+                                          batch_size=self.args.batch_size,
                                           shuffle=True,
                                           num_workers=self.num_works,
                                           drop_last=drop_last,
@@ -119,7 +120,7 @@ class MyDataLoader:
             data = data_normal(data)
             test_dataset = spO2_HerarRate_Dataset(data, label)
             test_loader = DataLoader(test_dataset,
-                                     batch_size=64,
+                                     batch_size=self.args.batch_size,
                                      shuffle=False,
                                      num_workers=self.num_works,
                                      # collate_fn=lambda x: collate_fn(x, max_len=self.args.seq_len),
@@ -130,7 +131,7 @@ class MyDataLoader:
             data = data_normal(data)
             predict_data = spO2_HerarRate_Dataset(data, y=None, mode='predict')
             predict_loader = DataLoader(predict_data,
-                                        batch_size=64,
+                                        batch_size=self.args.batch_size,
                                         shuffle=False,
                                         num_workers=self.num_works,
                                         # collate_fn=lambda x: collate_fn(x, max_len=self.args.seq_len),
@@ -138,12 +139,78 @@ class MyDataLoader:
             return predict_loader
         
         
+class PretrainDataset:
+    def __init__(self, X, y=None):
+        self.X = torch.Tensor()
+        
+    def __len__(self):
+        pass
+    
+    def __getitem__(self):
+        pass
+    
+    
 class PretrainLoader:
     def __init__(self, args):
         self.args = args
         
         data_path = "./dataset/custom_dataset/"
 
-        self.train_x = np.load(os.path.join(data_path, "训练集/train_x.npy"))
-        self.train_y = np.load(os.path.join(data_path, "训练集/train_y.npy"))
-        self.test_x = np.load(os.path.join(data_path, "测试集A/test_x_A.npy")).reshape(-1, 180, 2)
+        self.train_x = np.load(os.path.join(data_path, "训练集/train_x.npy")).transpose((0, 2, 1))
+        self.test_x = np.load(os.path.join(data_path, "测试集A/test_x_A.npy")).transpose((0, 2, 1))
+        self.data = np.concatenate((self.train_x, self.test_x), axis=0)
+        self.y = np.zeros(self.data.shape[0])
+        # 全局做归一化
+        self.data = data_normal(self.data)
+        self.num_works = 8
+        
+        # _n = self.data.shape[0]
+        # idx_list = list(range(_n))
+        # np.random.shuffle(idx_list)
+        
+        # n_train = int(_n * 0.8)
+        # train_idx = idx_list[:n_train]
+        # test_idx = idx_list[n_train:]  # test
+        # _n_train = len(train_idx)
+        # train_idx = train_idx[:_n_train]  # train
+        # val_idx = train_idx[_n_train:]  # val
+        
+        # self.train = self.data[train_idx]
+        # self.val = self.data[val_idx]
+        # self.test = self.data[test_idx]
+        # del self.train_x, self.test_x, self.data
+        # gc.collect()
+        
+    def get_loader(self, data_idx, return_val=False, mode='train'):
+        # if mode == 'train':
+        data = self.data[data_idx]
+        drop_last = True
+        if return_val:
+            n = int(len(data_idx) * 0.8)
+            x_train = data[:n]
+            x_val = data[n:]
+            train_dataset = spO2_HerarRate_Dataset(x_train, y=None, mode='test')
+            val_dataset = spO2_HerarRate_Dataset(x_val, y=None, mode='test')
+            train_loader = DataLoader(train_dataset,
+                                        batch_size=self.args.batch_size,
+                                        shuffle=True,
+                                        num_workers=self.num_works,
+                                        drop_last=drop_last,
+                                        )
+            val_loader = DataLoader(val_dataset,
+                                    batch_size=self.args.batch_size,
+                                    shuffle=False,
+                                    num_workers=self.num_works,
+                                    drop_last=drop_last,
+                                    )
+            return train_loader, val_loader
+            
+            
+        dataset = spO2_HerarRate_Dataset(data, y=None, mode='test')
+        data_loader = DataLoader(dataset,
+                                batch_size=self.args.batch_size,
+                                shuffle=True,
+                                num_workers=self.num_works,
+        )
+        return data_loader
+            

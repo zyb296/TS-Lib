@@ -1,0 +1,19 @@
+python -u run_NSTransformer_pretrain.py \
+  --task_name pretrain \
+  --root_path ./dataset \
+  --model Nonstationary_Transformer \
+  --log_dir ./log/pretrain \
+  --data sleep_data \
+  --num_class 3 \
+  --seq_len 180 \
+  --enc_in 2 \
+  --c_out 2 \
+  --e_layers 2 \
+  --p_hidden_dims 64 64 \
+  --p_hidden_layers 2 \
+  --d_model 16 \
+  --d_ff 64 \
+   --batch_size 32 \
+  --learning_rate 0.001 \
+  --train_epochs 500 \
+  --patience 10

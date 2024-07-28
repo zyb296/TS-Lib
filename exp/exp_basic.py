@@ -2,6 +2,7 @@ import os
 import time
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 from torch import optim
 import torch.nn as nn
 from tqdm import tqdm
@@ -50,6 +51,7 @@ class Exp_Basic(object):
         self.logger = args.logger
         # self.logger.info(f"version path: {self.args.version_path}")
         self._tensorboard_logger()
+        self._fold_checkpoint_path()
 
     def _build_model(self):
         model = self.model_dict[self.args.model].Model(self.args).float()
@@ -60,7 +62,10 @@ class Exp_Basic(object):
         # log_path = os.path.join(self.args.log_dir, f"{self.args.setting}/fold{self.args.fold}")
         
         # log_path = os.path.join(self.args.version_path, f"fold{self.args.fold}")  # 本机路径
-        log_path = os.path.join("/root/tf-logs", self.args.version_path, f"fold{self.args.fold}")  # autodl必须放在/root/tf-logs/路径下
+        if self.args.task_name == 'pretrain':
+            log_path = os.path.join("/root/tf-logs", "pretrain", self.args.version_path, f"fold{self.args.fold}")
+        else:
+            log_path = os.path.join("/root/tf-logs", self.args.version_path, f"fold{self.args.fold}")  # autodl必须放在/root/tf-logs/路径下
         
         # self.logger.info(f"tensorboard path: {log_path}")
         os.makedirs(log_path, exist_ok=True)
@@ -86,6 +91,14 @@ class Exp_Basic(object):
         #     device = torch.device('cpu')
         #     print('Use CPU')
         return device
+    
+    def _fold_checkpoint_path(self):
+        if self.args.task_name == 'pretrain':
+            check_point_path = os.path.join(self.args.checkpoints, "pretrain", self.args.version)
+        else:
+            check_point_path = os.path.join(self.args.checkpoints, self.args.version)
+        os.makedirs(check_point_path, exist_ok=True)
+        self.pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
 
     def validation(self, val_laoder):
         total_loss = []
@@ -95,7 +108,7 @@ class Exp_Basic(object):
                 # ------- one batch ------------
                 loss = self.validation_step(batch_data)
                 # -----------------------------
-                total_loss.append(loss)
+                total_loss.append(loss.item())
         total_loss = np.average(total_loss)
 
         self.model.train()
@@ -103,10 +116,10 @@ class Exp_Basic(object):
 
     def train(self, train_loader, val_loader=None):
         # 模型权重路径
-        check_point_path = os.path.join(self.args.checkpoints, self.args.version)
-        pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
-        if not os.path.exists(check_point_path):
-            os.makedirs(check_point_path)
+        # check_point_path = os.path.join(self.args.checkpoints, self.args.version)
+        # pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
+        # if not os.path.exists(check_point_path):
+        #     os.makedirs(check_point_path)
 
         time_now = time.time()
 
@@ -155,7 +168,7 @@ class Exp_Basic(object):
             self.writer.add_scalar("Loss/val", val_loss, global_step)
             
             # early-stopping and asjust learning rate
-            self.early_stopping(val_loss, self.model, pth_path)
+            self.early_stopping(val_loss, self.model, self.pth_path)
             if self.early_stopping.early_stop:
                 print("Early stopping")
                 break
@@ -163,13 +176,13 @@ class Exp_Basic(object):
                 adjust_learning_rate(self.optimizer, epoch + 1, self.args)
 
         # 加载最优模型
-        self.model.load_state_dict(torch.load(pth_path))
+        self.model.load_state_dict(torch.load(self.pth_path))
 
     def test(self, test_loader):
         # 加载模型
-        check_point_path = os.path.join(self.args.checkpoints, self.args.version)
-        pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
-        self.model.load_state_dict(torch.load(pth_path))
+        # check_point_path = os.path.join(self.args.checkpoints, self.args.version)
+        # pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
+        self.model.load_state_dict(torch.load(self.pth_path))
         
         preds = []
         trues = []
@@ -182,6 +195,32 @@ class Exp_Basic(object):
                 # -----------------------------
                 preds.append(outputs.detach())
                 trues.append(label)
+        if self.args.task_name == 'pretrain':
+            # TODO 随机打印一个重建结果
+            one_sample_pre = preds[0][0].cpu().numpy()
+            one_sample_true = trues[0][0].cpu().numpy()
+            
+            fig, ax = plt.subplots(figsize=(6, 4))
+            _ = ax.plot(one_sample_pre[:, 0], label='pre')
+            _ = ax.plot(one_sample_true[:, 0], label='true')
+            plt.legend()
+            # 将 matplotlib 图像转换为 numpy 数组
+            plt.tight_layout()
+            canvas = plt.gcf().canvas
+            canvas.draw()
+
+            # 获取图像大小
+            width, height = canvas.get_width_height()
+
+            # 将 RGBA 转换为 numpy 数组
+            image = np.frombuffer(canvas.tostring_rgb(), dtype='uint8').reshape(height, width, 3)
+
+            # 转换为 PyTorch 张量
+            image = torch.from_numpy(image).permute(2, 0, 1)
+            # 记录图像数据到 TensorBoard
+            self.writer.add_image('figs/reconstruct', image, global_step=0)
+            
+            return preds, trues
         
         preds = torch.cat(preds, 0)
         trues = torch.cat(trues, 0)
@@ -191,11 +230,6 @@ class Exp_Basic(object):
         predictions = torch.argmax(probs, dim=1).cpu().numpy()  # (total_samples,) int class index for each sample
         trues = trues.flatten().cpu().numpy()
         accuracy = cal_accuracy(predictions, trues)
-
-        # result save
-        # folder_path = f'./results/{self.args.version}'
-        # if not os.path.exists(folder_path):
-        #     os.makedirs(folder_path)
 
         self.logger.info('accuracy:{}'.format(accuracy))
         # file_name='result_classification.txt'
@@ -209,9 +243,8 @@ class Exp_Basic(object):
 
     def prediction(self, prediction_loader, version, fold):
         # 加载模型
-        best_model_path = os.path.join(self.args.checkpoints, version, f"checkpoint_fold{fold}.pth")
-        # best_model_path = path + '/' + 'checkpoint.pth'
-        self.model.load_state_dict(torch.load(best_model_path))
+        # best_model_path = os.path.join(self.args.checkpoints, version, f"checkpoint_fold{fold}.pth")
+        self.model.load_state_dict(torch.load(self.pth_path))
         
         # 预测
         preds = []

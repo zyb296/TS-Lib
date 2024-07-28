@@ -123,12 +123,14 @@ def create_version_folder(log_dir):
     # 检查日志文件夹是否存在
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
-
+    print(log_dir)
     # 获取所有文件夹名称
     folders = [f for f in os.listdir(log_dir) if os.path.isdir(os.path.join(log_dir, f))]
+    print(folders)
     
     # 过滤出版本文件夹
     version_folders = [f for f in folders if f.startswith('version')]
+    print(version_folders)
     
     if not version_folders:
         # 如果没有版本文件夹，创建version1
@@ -151,9 +153,11 @@ def create_version_folder(log_dir):
 
 def _set_logger(args):
     """logger, 记录各种日志, 打印训练参数"""
-    os.makedirs("./log", exist_ok=True)
+    # os.makedirs("./log", exist_ok=True)
+    os.makedirs(args.log_dir, exist_ok=True)
     
-    log_file = os.path.join('./log', f'{args.model}-{args.task_name}.log')
+    # log_file = os.path.join('./log', f'{args.model}-{args.task_name}.log')
+    log_file = os.path.join(args.log_dir, f'{args.model}-{args.task_name}.log')
     log = Logger(log_file, level='debug')
     logger = log.get_logger()
     
