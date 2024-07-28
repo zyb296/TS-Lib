@@ -82,13 +82,10 @@ if __name__ == '__main__':
 
     # basic config
     parser.add_argument("--log_dir", type=str, default='./log', help="日志记录路径")
-    parser.add_argument("--setting", type=str, default="模型版本")
     parser.add_argument('--task_name', type=str, required=True, default='long_term_forecast',
                         help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
     parser.add_argument('--model', type=str, required=True, default='Autoformer',
                         help='model name, options: [Autoformer, Transformer, TimesNet]')
-    parser.add_argument('--model_id', type=str, required=True,
-                        default='test', help='model id')
     # data loader
     parser.add_argument('--num_class', type=int, default=3)
     parser.add_argument('--data', type=str, required=True,

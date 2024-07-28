@@ -163,7 +163,7 @@ def _set_logger(args):
     logger.info('\n')
     logger.info(f"#################################### {v} ####################################")
     logger.info("\t" + "Basic Config" + "\t")
-    logger.info(f'  {"Model ID:":<20}{args.model_id:<20}{"Model:":<20}{args.model:<20}')
+    logger.info(f'  {"Task Name:":<20}{args.task_name:<20}{"Model:":<20}{args.model:<20}')
     logger.info(f'  {"Sequence Length:":<20}{args.seq_len:<20}{"Input dimension:":<20}{args.enc_in:<20}')
     logger.info('\n')
 
@@ -175,7 +175,7 @@ def _set_logger(args):
     logger.info("\t" + "Model Parameters" + "\t")
     logger.info(f'  {"encoder layers:":<20}{args.e_layers:<20}{"d_model:":<20}{args.d_model:<20}')
     logger.info(f'  {"d_ff:":<20}{args.d_ff:<20}')
-    logger.info(f'  {"p_hidden_dims:":<20}"[{args.p_hidden_dims[0]} {args.p_hidden_dims[1]:<20}]{"p_hitten_layers:":<20}{args.p_hidden_layers:<20}')
+    logger.info(f'  {"p_hidden_dims:":<20}{args.p_hidden_dims[0]} {args.p_hidden_dims[1]:<20}{"p_hitten_layers:":<20}{args.p_hidden_layers:<20}')
     logger.info('\n')
     
     logger.info("\t" + "Training" + "\t")
