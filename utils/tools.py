@@ -39,11 +39,11 @@ class EarlyStopping:
         self.val_loss_min = np.Inf
         self.delta = delta
 
-    def __call__(self, val_loss, model, path):
+    def __call__(self, val_loss, model, pth_path):
         score = -val_loss
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(val_loss, model, path)
+            self.save_checkpoint(val_loss, model, pth_path)
         elif score < self.best_score + self.delta:
             self.counter += 1
             print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
@@ -51,13 +51,13 @@ class EarlyStopping:
                 self.early_stop = True
         else:
             self.best_score = score
-            self.save_checkpoint(val_loss, model, path)
+            self.save_checkpoint(val_loss, model, pth_path)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model, path):
+    def save_checkpoint(self, val_loss, model, pth_path):
         if self.verbose:
             print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
-        torch.save(model.state_dict(), path + '/' + 'checkpoint.pth')
+        torch.save(model.state_dict(), pth_path)
         self.val_loss_min = val_loss
 
 
@@ -147,7 +147,7 @@ def create_version_folder(log_dir):
     new_version_path = os.path.join(log_dir, new_version)
     os.makedirs(new_version_path, exist_ok=True)
     
-    return new_version_path
+    return new_version, new_version_path
 
 def _set_logger(args):
     """logger, 记录各种日志, 打印训练参数"""
@@ -164,11 +164,22 @@ def _set_logger(args):
     logger.info(f"#################################### {v} ####################################")
     logger.info("\t" + "Basic Config" + "\t")
     logger.info(f'  {"Model ID:":<20}{args.model_id:<20}{"Model:":<20}{args.model:<20}')
+    logger.info(f'  {"Sequence Length:":<20}{args.seq_len:<20}{"Input dimension:":<20}{args.enc_in:<20}')
     logger.info('\n')
 
     logger.info("\t" + "Data Loader" + "\t")
     logger.info(f'  {"Data:":<20}{args.data:<20}{"Root Path:":<20}{args.root_path:<20}')
     logger.info(f'  {"Checkpoints:":<20}{args.checkpoints:<20}')
+    logger.info('\n')
+    
+    logger.info("\t" + "Model Parameters" + "\t")
+    logger.info(f'  {"encoder layers:":<20}{args.e_layers:<20}{"d_model:":<20}{args.d_model:<20}')
+    logger.info(f'  {"d_ff:":<20}{args.d_ff:<20}')
+    logger.info(f'  {"p_hidden_dims:":<20}"[{args.p_hidden_dims[0]} {args.p_hidden_dims[1]:<20}]{"p_hitten_layers:":<20}{args.p_hidden_layers:<20}')
+    logger.info('\n')
+    
+    logger.info("\t" + "Training" + "\t")
+    logger.info(f'  {"Batch Size:":<20}{args.batch_size:<20}{"Learning rate:":<20}{args.learning_rate:<20}')
     logger.info('\n')
     
     return logger

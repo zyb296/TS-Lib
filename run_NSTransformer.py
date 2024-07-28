@@ -31,10 +31,11 @@ def cross_validation(args, setting='v1'):
     print(os.getcwd())
     submission = pd.read_csv("./dataset/custom_dataset/测试集A/submit_example_A.csv")
     
-    args.version_path = create_version_folder("./log")
+    version, args.version_path = create_version_folder("./log")
     print("version path: ", args.version_path)
     logger = _set_logger(args)
     args.logger = logger
+    args.version = version
 
     accuracy_list = []
     for fold, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
@@ -58,19 +59,20 @@ def cross_validation(args, setting='v1'):
         accuracy = model.test(test_loader)
         accuracy_list.append(accuracy)
 
-        # print(f'>>>>>>> prediction <<<<<<<<<<<<')
-        # predictions = model.prediction(infer_loader)
-        # submission[f"fold_{fold}"] = predictions
+        print(f'>>>>>>> prediction <<<<<<<<<<<<')
+        predictions = model.prediction(infer_loader, version, fold)
+        submission[f"fold_{fold}"] = predictions
         torch.cuda.empty_cache()
 
-    logger.info(f"平均accuracy: {np.mean(accuracy_list)}")
+    mean_acc = np.mean(accuracy_list)
+    logger.info(f"平均accuracy: {mean_acc}")
     # 计算每一行的众数
-    submission['label'] = submission.iloc[:, -
-                                          5:].mode(axis=1).iloc[:, 0].astype(int)
+    submission['label'] = submission.iloc[:, -5:].mode(axis=1).iloc[:, 0].astype(int)
     submission = submission.iloc[:, :2]
 
-    os.makedirs(f"./result/{setting}", exist_ok=True)
-    submission.to_csv(f"./results/{setting}/预测结果.csv", index=False)
+    result_dir = f"./results/"
+    os.makedirs(result_dir, exist_ok=True)
+    submission.to_csv(f"./results/{version}_{mean_acc:.4f}.csv", index=False)
 
 
 if __name__ == '__main__':

@@ -101,9 +101,10 @@ class Exp_Basic(object):
         self.model.train()
         return total_loss
 
-    def train(self, train_loader, val_loader=None, setting='v1'):
+    def train(self, train_loader, val_loader=None):
         # 模型权重路径
-        check_point_path = os.path.join(self.args.version_path, f"fold{self.args.fold}")
+        check_point_path = os.path.join(self.args.checkpoints, self.args.version)
+        pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
         if not os.path.exists(check_point_path):
             os.makedirs(check_point_path)
 
@@ -154,22 +155,21 @@ class Exp_Basic(object):
             self.writer.add_scalar("Loss/val", val_loss, global_step)
             
             # early-stopping and asjust learning rate
-            self.early_stopping(val_loss, self.model, check_point_path)
+            self.early_stopping(val_loss, self.model, pth_path)
             if self.early_stopping.early_stop:
                 print("Early stopping")
                 break
             if (epoch + 1) % 5 == 0:
                 adjust_learning_rate(self.optimizer, epoch + 1, self.args)
 
-        # best_model_path = path + '/' + 'checkpoint.pth'
-        # check_point_path = os.path.join(self.args.version_path, f"fold{self.args.fold}")
-        # os.makedirs(check_point_path, exist_ok=True)
-        best_model_path = os.path.join(check_point_path, 'checkpoint.pth') 
-        self.model.load_state_dict(torch.load(best_model_path))
+        # 加载最优模型
+        self.model.load_state_dict(torch.load(pth_path))
 
     def test(self, test_loader):
-        setting = self.args.setting
         # 加载模型
+        check_point_path = os.path.join(self.args.checkpoints, self.args.version)
+        pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
+        self.model.load_state_dict(torch.load(pth_path))
         
         preds = []
         trues = []
@@ -193,9 +193,9 @@ class Exp_Basic(object):
         accuracy = cal_accuracy(predictions, trues)
 
         # result save
-        folder_path = './results/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        # folder_path = f'./results/{self.args.version}'
+        # if not os.path.exists(folder_path):
+        #     os.makedirs(folder_path)
 
         self.logger.info('accuracy:{}'.format(accuracy))
         # file_name='result_classification.txt'
@@ -207,10 +207,10 @@ class Exp_Basic(object):
         # f.close()
         return accuracy
 
-    def prediction(self, prediction_loader, setting='v1'):
+    def prediction(self, prediction_loader, version, fold):
         # 加载模型
-        path = os.path.join(self.args.checkpoints, setting, f"fold{self.args.fold}")
-        best_model_path = path + '/' + 'checkpoint.pth'
+        best_model_path = os.path.join(self.args.checkpoints, version, f"checkpoint_fold{fold}.pth")
+        # best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
         
         # 预测

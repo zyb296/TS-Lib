@@ -13,8 +13,8 @@ python -u run_NSTransformer.py \
   --p_hidden_layers 2 \
   --d_model 16 \
   --d_ff 64 \
-   --batch_size 64 \
+   --batch_size 32 \
   --learning_rate 0.001 \
-  --train_epochs 30 \
+  --train_epochs 50 \
   --patience 10 \
   --setting v1
