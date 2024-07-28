@@ -60,7 +60,7 @@ class Exp_Basic(object):
         # log_path = os.path.join(self.args.log_dir, f"{self.args.setting}/fold{self.args.fold}")
         
         # log_path = os.path.join(self.args.version_path, f"fold{self.args.fold}")  # 本机路径
-        log_path = os.path.join("/root/tf-logs", self.args.version_path, f"fold{self.args.fold}")  # autodl路径
+        log_path = os.path.join("/root/tf-logs", self.args.version_path, f"fold{self.args.fold}")  # autodl必须放在/root/tf-logs/路径下
         
         # self.logger.info(f"tensorboard path: {log_path}")
         os.makedirs(log_path, exist_ok=True)

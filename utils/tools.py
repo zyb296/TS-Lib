@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import torch
+import random
 import matplotlib.pyplot as plt
 import pandas as pd
 import math
@@ -171,3 +172,18 @@ def _set_logger(args):
     logger.info('\n')
     
     return logger
+
+def seed_everything(seed=42):
+    """
+    Set seed for reproducibility.
+    
+    Parameters:
+    seed (int): Seed value to be set.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False

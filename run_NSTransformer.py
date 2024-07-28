@@ -16,7 +16,7 @@ from utils.print_args import print_args
 from sklearn.model_selection import StratifiedKFold
 from data_provider.cus_dataloader import MyDataLoader
 from utils.my_logger import Logger
-from utils.tools import create_version_folder, _set_logger
+from utils.tools import create_version_folder, _set_logger, seed_everything
 
 
 def cross_validation(args, setting='v1'):
@@ -74,10 +74,7 @@ def cross_validation(args, setting='v1'):
 
 
 if __name__ == '__main__':
-    fix_seed = 42
-    random.seed(fix_seed)
-    torch.manual_seed(fix_seed)
-    np.random.seed(fix_seed)
+    seed_everything(seed=42)
 
     parser = argparse.ArgumentParser(description='NSTransformer')
 
