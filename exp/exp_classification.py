@@ -20,22 +20,36 @@ class FineTuneModel(nn.Module):
     def __init__(self, args, pretrain_model):
         super(FineTuneModel, self).__init__()
         self.args = args
-        l = list(pretrain_model.children())
-        print("pretrain model: ", l[-3])
-        self.feature_extractor = nn.Sequential(*l)
+       
+        self.backbone = pretrain_model
         self.act = F.gelu
         self.dropout = nn.Dropout(p=0.1)
         self.linear = nn.Linear(self.args.d_model * self.args.seq_len, self.args.num_class)
         
-    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
-        out = self.feature_extractor(x_enc)
-        
+    def forward(self, x_enc):
+        x_raw = x_enc.clone().detach()
+
+        # Normalization
+        mean_enc = x_enc.mean(1, keepdim=True).detach()  # B x 1 x E
+        std_enc = torch.sqrt(
+            torch.var(x_enc - mean_enc, dim=1, keepdim=True, unbiased=False) + 1e-5).detach()  # B x 1 x E
+        # B x S x E, B x 1 x E -> B x 1, positive scalar
+        tau = self.backbone.tau_learner(x_raw, std_enc).exp()
+        # B x S x E, B x 1 x E -> B x S
+        delta = self.backbone.delta_learner(x_raw, mean_enc)
+        # embedding
+        enc_out = self.backbone.enc_embedding(x_enc, None)
+        enc_out, attns = self.backbone.encoder(enc_out, attn_mask=None, tau=tau, delta=delta)
+
         # Output
-        out = self.act(out)
-        out = self.dropout(out)
-        out = out.reshape(out.shape[0], -1)
-        out = self.linear(out)
-        return out
+        output = self.act(enc_out)  # the output transformer encoder/decoder embeddings don't include non-linearity
+        output = self.dropout(output)
+        # output = output * x_mark_enc.unsqueeze(-1)  # zero-out padding embeddings
+        # (batch_size, seq_length * d_model)
+        output = output.reshape(output.shape[0], -1)
+        # (batch_size, num_classes)
+        output = self.linear(output)
+        return output
         
 
 class Exp_Classification(Exp_Basic):
@@ -51,8 +65,9 @@ class Exp_Classification(Exp_Basic):
                                         f"checkpoint_fold{self.args.pretrain_fold}.pth")
         print("check_point_path: ", check_point_path)
         print("pth_path: ", self.pth_path)
-        self.model.load_state_dict(torch.load(check_point_path))
+        self.model.load_state_dict(torch.load(check_point_path)) 
         self.model = FineTuneModel(self.args, self.model).to(self.device)
+        # self.writer.add_graph(self.model, torch.randn(1, 180, 2))
         
     def validation(self, val_laoder):
         total_loss = []
@@ -219,7 +234,7 @@ class Exp_Classification(Exp_Basic):
         label = label.to(self.device)
         # print(batch_x.shape)
 
-        outputs = self.model(batch_x, None, None, None)
+        outputs = self.model(batch_x)
         loss = self.loss_func(outputs, label.long().squeeze(-1))
         return loss
 
@@ -229,7 +244,7 @@ class Exp_Classification(Exp_Basic):
         # padding_mask = padding_mask.float().to(self.device)
         label = label.to(self.device)
 
-        outputs = self.model(batch_x, None, None, None)
+        outputs = self.model(batch_x)
 
         pred = outputs.detach().cpu()
         loss = self.loss_func(pred, label.long().squeeze().cpu())
@@ -240,7 +255,7 @@ class Exp_Classification(Exp_Basic):
         batch_x = batch_x.float().to(self.device)
         # padding_mask = padding_mask.float().to(self.device)
         label = label.to(self.device)
-        outputs = self.model(batch_x, None, None, None)
+        outputs = self.model(batch_x)
         return label, outputs
 
     def prediction_step(self, batch_data):
@@ -256,7 +271,7 @@ class Exp_Classification(Exp_Basic):
                 else:
                     pretrained_params.append(param)
             optimizer = optim.Adam([
-                {"params": pretrained_params, "lr": 0.1 * self.args.learning_rate},  # 1e-4
+                {"params": pretrained_params, "lr": self.args.learning_rate},  # 1e-4
                 {"params": head_params, "lr": self.args.learning_rate},  # 1e-3
             ])
         else:
