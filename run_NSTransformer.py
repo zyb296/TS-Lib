@@ -11,6 +11,7 @@ import pandas as pd
 # from exp.exp_anomaly_detection import Exp_Anomaly_Detection
 # from exp.exp_classification import Exp_Classification
 from exp.exp_basic import Exp_Basic
+from exp.exp_classification import Exp_Classification
 from utils.print_args import print_args
 
 from sklearn.model_selection import StratifiedKFold
@@ -19,7 +20,7 @@ from utils.my_logger import Logger
 from utils.tools import create_version_folder, _set_logger, seed_everything
 
 
-def cross_validation(args, setting='v1'):
+def cross_validation(args):
 
     skf = StratifiedKFold(n_splits=5, random_state=42, shuffle=True)
 
@@ -31,7 +32,7 @@ def cross_validation(args, setting='v1'):
     print(os.getcwd())
     submission = pd.read_csv("./dataset/custom_dataset/测试集A/submit_example_A.csv")
     
-    version, args.version_path = create_version_folder("./log")
+    version, args.version_path = create_version_folder(args.log_dir)
     print("version path: ", args.version_path)
     logger = _set_logger(args)
     args.logger = logger
@@ -48,7 +49,7 @@ def cross_validation(args, setting='v1'):
         # backbone
 
         # model
-        Exp = Exp_Basic
+        Exp = Exp_Classification
         model = Exp(args)  # set experiments
 
         # train val test
@@ -86,6 +87,10 @@ if __name__ == '__main__':
                         help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
     parser.add_argument('--model', type=str, required=True, default='Autoformer',
                         help='model name, options: [Autoformer, Transformer, TimesNet]')
+    parser.add_argument('--use_pretrain', action='store_true', default=False, help='是否用预训练网络')
+    parser.add_argument('--pretrain_version', type=int, default=0, help='需要加载的预训练模型版本')
+    parser.add_argument('--pretrain_fold', type=int, default=0, help='预训练模型的第几个fold')
+    
     # data loader
     parser.add_argument('--num_class', type=int, default=3)
     parser.add_argument('--data', type=str, required=True,
@@ -102,7 +107,7 @@ if __name__ == '__main__':
                         default='./checkpoints/', help='location of model checkpoints')
 
     # forecasting task
-    parser.add_argument('--seq_len', type=int, default=96,
+    parser.add_argument('--seq_len', type=int, default=180,
                         help='input sequence length')
     parser.add_argument('--label_len', type=int,
                         default=48, help='start token length')
@@ -112,8 +117,11 @@ if __name__ == '__main__':
                         default='Monthly', help='subset for M4')
 
     # model define
-    parser.add_argument('--enc_in', type=int, default=7,
+    parser.add_argument('--enc_in', type=int, default=2,
                         help='encoder input size')
+    parser.add_argument('--c_out', type=int, default=2,
+                        help='编码器输出维度')
+    
     parser.add_argument('--d_model', type=int, default=512,
                         help='dimension of model')
     parser.add_argument('--n_heads', type=int, default=8, help='num of heads')

@@ -1,0 +1,22 @@
+python -u run_NSTransformer.py \
+  --task_name finetune \
+  --root_path ./dataset \
+  --model Nonstationary_Transformer \
+  --log_dir ./log/finetune \
+  --data sleep_data \
+  --num_class 3 \
+  --seq_len 180 \
+  --enc_in 2 \
+  --c_out 2 \
+  --e_layers 2 \
+  --p_hidden_dims 64 64 \
+  --p_hidden_layers 2 \
+  --d_model 16 \
+  --d_ff 64 \
+   --batch_size 32 \
+  --learning_rate 0.001 \
+  --train_epochs 50 \
+  --patience 10 \
+  --use_pretrain \
+  --pretrain_version 14 \
+  --pretrain_fold 4

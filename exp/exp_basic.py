@@ -96,6 +96,9 @@ class Exp_Basic(object):
         if self.args.task_name == 'pretrain':
             check_point_path = os.path.join(self.args.checkpoints, "pretrain", self.args.version)
         else:
+            # if self.args.use_pretrain:
+            #     check_point_path = os.path.join(self.args.checkpoints, "finetune", self.args.version)
+            # else:
             check_point_path = os.path.join(self.args.checkpoints, self.args.version)
         os.makedirs(check_point_path, exist_ok=True)
         self.pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
