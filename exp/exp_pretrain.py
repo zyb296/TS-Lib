@@ -60,11 +60,30 @@ class Exp_Pretrain(Exp_Basic):
             # TODO 随机打印一个重建结果
             one_sample_pre = preds[0][0].cpu().numpy()
             one_sample_true = trues[0][0].cpu().numpy()
+            print(one_sample_pre.shape)
             
-            fig, ax = plt.subplots(figsize=(6, 4))
-            _ = ax.plot(one_sample_pre[:, 0], label='pre')
-            _ = ax.plot(one_sample_true[:, 0], label='true')
-            plt.legend()
+            fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+            axs[0].plot(one_sample_pre[:, 0], label='pre 0')
+            axs[0].plot(one_sample_pre[:, 1], label='pre 1')
+            axs[0].plot(one_sample_true[:, 0], label='true 0')
+            axs[0].plot(one_sample_true[:, 1], label='true 1')
+            axs[0].legend()
+            
+            one_sample_pre = preds[10][10].cpu().numpy()
+            one_sample_true = trues[10][10].cpu().numpy()
+            axs[1].plot(one_sample_pre[:, 0], label='pre 0')
+            axs[1].plot(one_sample_pre[:, 1], label='pre 1')
+            axs[1].plot(one_sample_true[:, 0], label='true 0')
+            axs[1].plot(one_sample_true[:, 1], label='true 1')
+            axs[1].legend()
+            
+            one_sample_pre = preds[5][10].cpu().numpy()
+            one_sample_true = trues[5][10].cpu().numpy()
+            axs[2].plot(one_sample_pre[:, 0], label='pre 0')
+            axs[2].plot(one_sample_pre[:, 1], label='pre 1')
+            axs[2].plot(one_sample_true[:, 0], label='true 0')
+            axs[2].plot(one_sample_true[:, 1], label='true 1')
+            axs[2].legend()
             # 将 matplotlib 图像转换为 numpy 数组
             plt.tight_layout()
             canvas = plt.gcf().canvas

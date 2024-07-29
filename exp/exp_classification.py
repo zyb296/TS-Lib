@@ -26,7 +26,7 @@ class FineTuneModel(nn.Module):
         self.dropout = nn.Dropout(p=0.1)
         self.linear = nn.Linear(self.args.d_model * self.args.seq_len, self.args.num_class)
         
-    def forward(self, x_enc):
+    def forward(self, x_enc, x_mark_enc=None, x_dec=None, x_mark_dec=None, mask=None):
         x_raw = x_enc.clone().detach()
 
         # Normalization
@@ -234,7 +234,7 @@ class Exp_Classification(Exp_Basic):
         label = label.to(self.device)
         # print(batch_x.shape)
 
-        outputs = self.model(batch_x)
+        outputs = self.model(batch_x, None, None, None)
         loss = self.loss_func(outputs, label.long().squeeze(-1))
         return loss
 
@@ -244,7 +244,7 @@ class Exp_Classification(Exp_Basic):
         # padding_mask = padding_mask.float().to(self.device)
         label = label.to(self.device)
 
-        outputs = self.model(batch_x)
+        outputs = self.model(batch_x, None, None, None)
 
         pred = outputs.detach().cpu()
         loss = self.loss_func(pred, label.long().squeeze().cpu())
@@ -255,14 +255,14 @@ class Exp_Classification(Exp_Basic):
         batch_x = batch_x.float().to(self.device)
         # padding_mask = padding_mask.float().to(self.device)
         label = label.to(self.device)
-        outputs = self.model(batch_x)
+        outputs = self.model(batch_x, None, None, None)
         return label, outputs
 
     def prediction_step(self, batch_data):
         return self.test_step(batch_data)
 
     def configure_optimizers(self):
-        if self.args.use_pretrain:
+        if self.args.use_pretrain:  # 微调时设置不同学习率
             pretrained_params = []
             head_params = []
             for name, param in self.model.named_parameters():

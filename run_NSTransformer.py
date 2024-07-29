@@ -77,11 +77,13 @@ def cross_validation(args):
 
 
 if __name__ == '__main__':
-    seed_everything(seed=42)
+    seed = 42
+    seed_everything(seed=seed)
 
     parser = argparse.ArgumentParser(description='NSTransformer')
 
     # basic config
+    parser.add_argument("--seed", type=int, default=seed, help="随机种子")
     parser.add_argument("--log_dir", type=str, default='./log', help="日志记录路径")
     parser.add_argument('--task_name', type=str, required=True, default='long_term_forecast',
                         help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
@@ -167,10 +169,6 @@ if __name__ == '__main__':
                         help='hidden layer dimensions of projector (List)')
     parser.add_argument('--p_hidden_layers', type=int,
                         default=2, help='number of hidden layers in projector')
-
-    # random seed
-    parser.add_argument('--seed', type=int, default=2,
-                        help="Randomization seed")
 
     args = parser.parse_args()
     # args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False

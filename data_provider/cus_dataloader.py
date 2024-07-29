@@ -137,17 +137,6 @@ class MyDataLoader:
                                         # collate_fn=lambda x: collate_fn(x, max_len=self.args.seq_len),
                                         )
             return predict_loader
-        
-        
-class PretrainDataset:
-    def __init__(self, X, y=None):
-        self.X = torch.Tensor()
-        
-    def __len__(self):
-        pass
-    
-    def __getitem__(self):
-        pass
     
     
 class PretrainLoader:
@@ -161,7 +150,7 @@ class PretrainLoader:
         self.data = np.concatenate((self.train_x, self.test_x), axis=0)
         self.y = np.zeros(self.data.shape[0])
         # 全局做归一化
-        self.data = data_normal(self.data)
+        # self.data = data_normal(self.data)
         self.num_works = 8
         
         # _n = self.data.shape[0]
@@ -189,6 +178,8 @@ class PretrainLoader:
             n = int(len(data_idx) * 0.8)
             x_train = data[:n]
             x_val = data[n:]
+            x_train = data_normal(x_train)
+            x_val = data_normal(x_val)
             train_dataset = spO2_HerarRate_Dataset(x_train, y=None, mode='test')
             val_dataset = spO2_HerarRate_Dataset(x_val, y=None, mode='test')
             train_loader = DataLoader(train_dataset,
@@ -205,7 +196,7 @@ class PretrainLoader:
                                     )
             return train_loader, val_loader
             
-            
+        data = data_normal(data)
         dataset = spO2_HerarRate_Dataset(data, y=None, mode='test')
         data_loader = DataLoader(dataset,
                                 batch_size=self.args.batch_size,
