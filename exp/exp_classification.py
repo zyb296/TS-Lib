@@ -63,8 +63,8 @@ class Exp_Classification(Exp_Basic):
         check_point_path = os.path.join(f"{self.args.checkpoints}/pretrain", 
                                         f"version{self.args.pretrain_version}", 
                                         f"checkpoint_fold{self.args.pretrain_fold}.pth")
-        print("check_point_path: ", check_point_path)
-        print("pth_path: ", self.pth_path)
+        print("加载的预训练模型: ", check_point_path)
+        # print("pth_path: ", self.pth_path)
         self.model.load_state_dict(torch.load(check_point_path)) 
         self.model = FineTuneModel(self.args, self.model).to(self.device)
         # self.writer.add_graph(self.model, torch.randn(1, 180, 2))

@@ -18,5 +18,5 @@ python -u run_NSTransformer.py \
   --train_epochs 50 \
   --patience 10 \
   --use_pretrain \
-  --pretrain_version 14 \
+  --pretrain_version 5 \
   --pretrain_fold 4

@@ -25,15 +25,18 @@ class Model(nn.Module):
     Paper link: https://arxiv.org/pdf/2211.14730.pdf
     """
 
-    def __init__(self, configs, patch_len=16, stride=8):
+    def __init__(self, configs):
         """
-        patch_len: int, patch len for patch_embedding
-        stride: int, stride for patch_embedding
+        patch_len: int, patch len for patch_embedding, default 16
+        stride: int, stride for patch_embedding, default 8
         """
         super().__init__()
         self.task_name = configs.task_name
+        patch_len = configs.patch_len
+        stride = configs.stride
         self.seq_len = configs.seq_len
-        self.pred_len = configs.pred_len
+        if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':
+            self.pred_len = configs.pred_len
         padding = stride
 
         # patching and embedding

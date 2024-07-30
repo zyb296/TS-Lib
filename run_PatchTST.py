@@ -139,6 +139,9 @@ if __name__ == '__main__':
                         default='gelu', help='activation')
     parser.add_argument('--output_attention', action='store_true',
                         help='whether to output attention in ecoder')
+    parser.add_argument('--patch_len', type=int, default=16, help='patch len for patch_embedding')
+    parser.add_argument('--stride', type=int, default=8, help='stride for patch_embedding')
+    
 
     # optimization
     parser.add_argument('--num_workers', type=int,
@@ -174,38 +177,10 @@ if __name__ == '__main__':
     # args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
     args.use_gpu = True if torch.cuda.is_available() else False
 
-    print(torch.cuda.is_available())
-
     if args.use_gpu and args.use_multi_gpu:
         args.devices = args.devices.replace(' ', '')
         device_ids = args.devices.split(',')
         args.device_ids = [int(id_) for id_ in device_ids]
         args.gpu = args.device_ids[0]
 
-    print('Args in experiment:')
-    # print_args(args)
-
     cross_validation(args)
-
-    # if args.task_name == 'long_term_forecast':
-    #     Exp = Exp_Long_Term_Forecast
-    # elif args.task_name == 'short_term_forecast':
-    #     Exp = Exp_Short_Term_Forecast
-    # elif args.task_name == 'imputation':
-    #     Exp = Exp_Imputation
-    # elif args.task_name == 'anomaly_detection':
-    #     Exp = Exp_Anomaly_Detection
-    # elif args.task_name == 'classification':
-    #     Exp = Exp_Classification
-    # else:
-    #     Exp = Exp_Long_Term_Forecast
-    # #================================================================
-    # exp = Exp(args)  # set experiments
-    # setting = 'v1'
-
-    # print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-    # exp.train(setting)
-
-    # print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
-    # exp.test(setting)
-    # torch.cuda.empty_cache()

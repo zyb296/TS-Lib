@@ -9,6 +9,8 @@ import torch.nn.functional as F
 from exp.exp_basic import Exp_Basic
 from utils.tools import EarlyStopping, adjust_learning_rate, cal_accuracy
 import warnings
+from utils.losses import MaskedLoss
+from utils.masking import RandomMasker
 warnings.filterwarnings('ignore')
 
 
@@ -16,27 +18,30 @@ class Exp_Pretrain(Exp_Basic):
     def __init__(self, args):
         super(Exp_Pretrain, self).__init__(args)
         self.loss_func = nn.MSELoss()
+        self.loss_func = MaskedLoss(loss_type='masked')  # full masked hybrid
+        self.random_masker = RandomMasker(mask_ratio=0.5, mask_length=30)
         
         
     def training_step(self, batch_data):
         batch_x, label = batch_data
         batch_x = batch_x.float().to(self.device)
+        masked_batch_x, mask = self.random_masker(batch_x)
 
         # reconstruction
-        outputs = self.model(batch_x, None, None, None)
+        outputs = self.model(masked_batch_x, None, None, None)
         # print(f"outputs: {outputs.shape}")
-        loss = self.loss_func(outputs, batch_x)
+        loss = self.loss_func(outputs, masked_batch_x, mask)
         return loss
     
     def validation_step(self, batch_data):
         batch_x, label = batch_data
         batch_x = batch_x.float().to(self.device)
-        # print(f"batch_x: {batch_x.shape}")
+        masked_batch_x, mask = self.random_masker(batch_x)
 
         # reconstruction
-        outputs = self.model(batch_x, None, None, None)
+        outputs = self.model(masked_batch_x, None, None, None)
         # print(f"outputs: {outputs.shape}")
-        loss = self.loss_func(outputs, batch_x)
+        loss = self.loss_func(outputs, masked_batch_x, mask)
         return loss
     
     def test(self, test_loader):
@@ -106,12 +111,12 @@ class Exp_Pretrain(Exp_Basic):
     def test_step(self, batch_data):
         batch_x, label = batch_data
         batch_x = batch_x.float().to(self.device)
-        # print(f"batch_x: {batch_x.shape}")
+        masked_batch_x, mask = self.random_masker(batch_x)
 
         # reconstruction
-        outputs = self.model(batch_x, None, None, None)
+        outputs = self.model(masked_batch_x, None, None, None)
+        outputs[~mask] = 0.  # 没有被mask的地方设为0, 只看被mask的预测结果
         return batch_x, outputs
     
     # def configure_optimizers(self):
-    #     pass
-    
+    #     pass    
