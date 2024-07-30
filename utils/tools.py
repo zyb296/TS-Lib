@@ -166,25 +166,28 @@ def _set_logger(args):
     logger.info('\n')
     logger.info('\n')
     logger.info(f"#################################### {v} ####################################")
-    logger.info("\t" + "Basic Config" + "\t")
-    logger.info(f'  {"Task Name:":<20}{args.task_name:<20}{"Model:":<20}{args.model:<20}')
-    logger.info(f'  {"Sequence Length:":<20}{args.seq_len:<20}{"Input dimension:":<20}{args.enc_in:<20}')
-    logger.info('\n')
+    for arg, value in vars(args).items():
+        if isinstance(value, (str, int, float)):
+            logger.info(f'\t {arg:<20} {value}')
+    # logger.info("\t" + "Basic Config" + "\t")
+    # logger.info(f'  {"Task Name:":<20}{args.task_name:<20}{"Model:":<20}{args.model:<20}')
+    # logger.info(f'  {"Sequence Length:":<20}{args.seq_len:<20}{"Input dimension:":<20}{args.enc_in:<20}')
+    # logger.info('\n')
 
-    logger.info("\t" + "Data Loader" + "\t")
-    logger.info(f'  {"Data:":<20}{args.data:<20}{"Root Path:":<20}{args.root_path:<20}')
-    logger.info(f'  {"Checkpoints:":<20}{args.checkpoints:<20}')
-    logger.info('\n')
+    # logger.info("\t" + "Data Loader" + "\t")
+    # logger.info(f'  {"Data:":<20}{args.data:<20}{"Root Path:":<20}{args.root_path:<20}')
+    # logger.info(f'  {"Checkpoints:":<20}{args.checkpoints:<20}')
+    # logger.info('\n')
     
-    logger.info("\t" + "Model Parameters" + "\t")
-    logger.info(f'  {"encoder layers:":<20}{args.e_layers:<20}{"d_model:":<20}{args.d_model:<20}')
-    logger.info(f'  {"d_ff:":<20}{args.d_ff:<20}')
-    logger.info(f'  {"p_hidden_dims:":<20}{args.p_hidden_dims[0]} {args.p_hidden_dims[1]:<20}{"p_hitten_layers:":<20}{args.p_hidden_layers:<20}')
-    logger.info('\n')
+    # logger.info("\t" + "Model Parameters" + "\t")
+    # logger.info(f'  {"encoder layers:":<20}{args.e_layers:<20}{"d_model:":<20}{args.d_model:<20}')
+    # logger.info(f'  {"d_ff:":<20}{args.d_ff:<20}')
+    # logger.info(f'  {"p_hidden_dims:":<20}{args.p_hidden_dims[0]} {args.p_hidden_dims[1]:<20}{"p_hitten_layers:":<20}{args.p_hidden_layers:<20}')
+    # logger.info('\n')
     
-    logger.info("\t" + "Training" + "\t")
-    logger.info(f'  {"Batch Size:":<20}{args.batch_size:<20}{"Learning rate:":<20}{args.learning_rate:<20}')
-    logger.info('\n')
+    # logger.info("\t" + "Training" + "\t")
+    # logger.info(f'  {"Batch Size:":<20}{args.batch_size:<20}{"Learning rate:":<20}{args.learning_rate:<20}')
+    # logger.info('\n')
     
     return logger
 

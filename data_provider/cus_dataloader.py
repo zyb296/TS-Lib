@@ -35,6 +35,16 @@ def data_normal(data):
     std = data.std(axis=(0, 1), keepdims=True) + 1e-5
     return (data - mean) / std
 
+def add_dim(data):
+    div = (data[:, :, 0] / data[:, :, 1])[..., np.newaxis]
+    # 对最后一个元素进行复制,用于填充
+    padding = data[:, -1:, :]
+    # 对每个序列执行一阶段差分
+    diff_data = np.concatenate([data[:, 1:, :], padding], axis=1) - data
+    print(f"diff.shape: ", diff_data.shape)
+    data = np.concatenate([data, div, diff_data], axis=-1)
+    print(data.shape)
+    return data
 
 class MyDataLoader:
     def __init__(self, args) -> None:
@@ -55,14 +65,13 @@ class MyDataLoader:
         self.train_x = self.train_x[total_index]
         # self.train_x = self.train_x.reshape(-1, 180, 2) 
         self.train_x = np.transpose(self.train_x, (0, 2, 1))
-        # self.train_x = np.concatenate((self.train_x, (self.train_x[:, :, 0] / self.train_x[:, :, 1])[..., np.newaxis]), axis=-1)  # 增加维度
-        
+        self.train_x = add_dim(self.train_x)  # 增加维度
         self.train_y = self.train_y[total_index]
 
         self.test_x = np.load(os.path.join(data_path, "测试集A/test_x_A.npy"))
         # self.test_x = self.test_x.reshape(-1, 180, 2)
         self.test_x = np.transpose(self.test_x, (0, 2, 1))
-        # self.test_x = np.concatenate((self.test_x, (self.test_x[:, :, 0] / self.test_x[:, :, 1])[..., np.newaxis]), axis=-1)  # 增加维度
+        self.test_x = add_dim(self.test_x)  # 增加维度
         
         self.submission = pd.read_csv(os.path.join(
             data_path, "测试集A/submit_example_A.csv"))
@@ -153,22 +162,6 @@ class PretrainLoader:
         # self.data = data_normal(self.data)
         self.num_works = 8
         
-        # _n = self.data.shape[0]
-        # idx_list = list(range(_n))
-        # np.random.shuffle(idx_list)
-        
-        # n_train = int(_n * 0.8)
-        # train_idx = idx_list[:n_train]
-        # test_idx = idx_list[n_train:]  # test
-        # _n_train = len(train_idx)
-        # train_idx = train_idx[:_n_train]  # train
-        # val_idx = train_idx[_n_train:]  # val
-        
-        # self.train = self.data[train_idx]
-        # self.val = self.data[val_idx]
-        # self.test = self.data[test_idx]
-        # del self.train_x, self.test_x, self.data
-        # gc.collect()
         
     def get_loader(self, data_idx, return_val=False, mode='train'):
         # if mode == 'train':
