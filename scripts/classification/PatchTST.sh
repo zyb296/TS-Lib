@@ -8,7 +8,7 @@ python -u run_PatchTST.py \
   --patch_len 8 \
   --stride 8 \
   --seq_len 180 \
-  --enc_in 5 \
+  --enc_in 2 \
   --e_layers 2 \
   --d_model 128 \
   --d_ff 512 \

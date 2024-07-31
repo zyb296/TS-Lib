@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 from torch.utils.data import Dataset, DataLoader
+from utils.augmentation import jitter
 
 import sys
 sys.path.append("..")
@@ -49,6 +50,7 @@ def add_dim(data):
 class MyDataLoader:
     def __init__(self, args) -> None:
         self.args = args
+        add_cal_dim = False
         # print(os.getcwd())
         # data_path = os.path.join(os.getcwd(), 'dataset')
         data_path = "./dataset/custom_dataset/"
@@ -65,13 +67,17 @@ class MyDataLoader:
         self.train_x = self.train_x[total_index]
         # self.train_x = self.train_x.reshape(-1, 180, 2) 
         self.train_x = np.transpose(self.train_x, (0, 2, 1))
-        self.train_x = add_dim(self.train_x)  # 增加维度
+        # self.train_x = jitter(self.train_x, sigma=0.2)  # 增加噪声
+        if add_cal_dim:
+            self.train_x = add_dim(self.train_x)  # 增加维度
         self.train_y = self.train_y[total_index]
 
         self.test_x = np.load(os.path.join(data_path, "测试集A/test_x_A.npy"))
         # self.test_x = self.test_x.reshape(-1, 180, 2)
         self.test_x = np.transpose(self.test_x, (0, 2, 1))
-        self.test_x = add_dim(self.test_x)  # 增加维度
+        # self.test_x = jitter(self.test_x, sigma=0.2)  # 增加噪声
+        if add_cal_dim:
+            self.test_x = add_dim(self.test_x)  # 增加维度
         
         self.submission = pd.read_csv(os.path.join(
             data_path, "测试集A/submit_example_A.csv"))
