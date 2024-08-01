@@ -2,7 +2,7 @@ python -u run_TimesNet.py \
   --task_name classification \
   --root_path ./dataset \
   --model TimesNet \
-  --log_dir ./log/patchTST \
+  --log_dir ./log/TimesNet \
   --data sleep_data \
   --num_class 3 \
   --seq_len 180 \

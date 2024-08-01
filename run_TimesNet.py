@@ -112,8 +112,8 @@ if __name__ == '__main__':
                         help='input sequence length')
     # parser.add_argument('--label_len', type=int,
     #                     default=48, help='start token length')
-    # parser.add_argument('--pred_len', type=int, default=96,
-    #                     help='prediction sequence length')
+    parser.add_argument('--pred_len', type=int, default=96,
+                        help='prediction sequence length')
     # parser.add_argument('--seasonal_patterns', type=str,
     #                     default='Monthly', help='subset for M4')
     parser.add_argument('--embed', type=str, default='timeF',
@@ -133,6 +133,8 @@ if __name__ == '__main__':
     parser.add_argument('--n_heads', type=int, default=8, help='num of heads')
     parser.add_argument('--e_layers', type=int, default=2,
                         help='num of encoder layers')
+    parser.add_argument('--num_kernels', type=int, default=6,
+                        )
     parser.add_argument('--d_ff', type=int, default=2048,
                         help='dimension of fcn')
     parser.add_argument('--factor', type=int, default=1, help='attn factor')
