@@ -103,8 +103,7 @@ if __name__ == '__main__':
     #                     default='ETTh1.csv', help='data file')
     # parser.add_argument('--features', type=str, default='M',
     #                     help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
-    # parser.add_argument('--freq', type=str, default='h',
-    #                     help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
+    
     parser.add_argument('--checkpoints', type=str,
                         default='./checkpoints/', help='location of model checkpoints')
 
@@ -117,12 +116,17 @@ if __name__ == '__main__':
     #                     help='prediction sequence length')
     # parser.add_argument('--seasonal_patterns', type=str,
     #                     default='Monthly', help='subset for M4')
+    parser.add_argument('--embed', type=str, default='timeF',
+                    help='time features encoding, options:[timeF, fixed, learned]')
+    parser.add_argument('--freq', type=str, default='h',
+                        help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
 
     # model define
     parser.add_argument('--enc_in', type=int, default=2,
                         help='encoder input size')
     parser.add_argument('--c_out', type=int, default=2,
                         help='编码器输出维度')
+    parser.add_argument('--top_k', type=int, default=5, help='for TimesBlock')
     
     parser.add_argument('--d_model', type=int, default=512,
                         help='dimension of model')
