@@ -4,25 +4,20 @@ import random
 import argparse
 import numpy as np
 import pandas as pd
-
 # from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
 # from exp.exp_imputation import Exp_Imputation
 # from exp.exp_short_term_forecasting import Exp_Short_Term_Forecast
 # from exp.exp_anomaly_detection import Exp_Anomaly_Detection
-# from exp.exp_classification import Exp_Classification
 from exp.exp_basic import Exp_Basic
 from exp.exp_classification import Exp_Classification
-from utils.print_args import print_args
-
 from sklearn.model_selection import StratifiedKFold
 from data_provider.cus_dataloader import MyDataLoader
-from utils.my_logger import Logger
 from utils.tools import create_version_folder, _set_logger, seed_everything
 
 
 def cross_validation(args):
-
-    skf = StratifiedKFold(n_splits=5, random_state=42, shuffle=True)
+    # 不同的任务对应不同的fold策略
+    skf = StratifiedKFold(n_splits=5, random_state=args.seed, shuffle=True)
 
     # dataloader
     dataloader = MyDataLoader(args)
@@ -83,31 +78,49 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='NSTransformer')
 
     # basic config
-    parser.add_argument("--seed", type=int, default=seed, help="随机种子")
-    parser.add_argument("--log_dir", type=str, default='./log', help="日志记录路径")
     parser.add_argument('--task_name', type=str, required=True, default='long_term_forecast',
-                        help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
-    parser.add_argument('--model', type=str, required=True, default='Autoformer',
-                        help='model name, options: [Autoformer, Transformer, TimesNet]')
+                    help='task name, options:[long_term_forecast, short_term_forecast, \
+                    imputation, classification, anomaly_detection]')
+    parser.add_argument("--seed", type=int, default=seed, help="random state")
+    parser.add_argument('--model_name', type=str, required=True, default='Autoformer',
+                        help='model name, options: [Autoformer, TimesNet]')
+    
+    # pretrain
     parser.add_argument('--use_pretrain', action='store_true', default=False, help='是否用预训练网络')
     parser.add_argument('--pretrain_version', type=int, default=0, help='需要加载的预训练模型版本')
     parser.add_argument('--pretrain_fold', type=int, default=0, help='预训练模型的第几个fold')
     
-    # data loader
-    parser.add_argument('--num_class', type=int, default=3)
-    parser.add_argument('--data', type=str, required=True,
-                        default='ETTm1', help='dataset type')
-    parser.add_argument('--root_path', type=str,
-                        default='./data/ETT/', help='root path of the data file')
-    # parser.add_argument('--data_path', type=str,
-    #                     default='ETTh1.csv', help='data file')
-    # parser.add_argument('--features', type=str, default='M',
-    #                     help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
-    # parser.add_argument('--freq', type=str, default='h',
-    #                     help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
-    parser.add_argument('--checkpoints', type=str,
-                        default='./checkpoints/', help='location of model checkpoints')
-
+    # model parameter
+    parser.add_argument('--enc_in', type=int, default=2, help='encoder input size')
+    parser.add_argument('--c_out', type=int, default=2, help='编码器输出维度')
+    parser.add_argument('--d_model', type=int, default=512, help='dimension of model')
+    parser.add_argument('--n_heads', type=int, default=8, help='num of heads')
+    parser.add_argument('--e_layers', type=int, default=2, help='num of encoder layers')
+    parser.add_argument('--d_ff', type=int, default=2048, help='dimension of fcn')
+    parser.add_argument('--factor', type=int, default=1, help='attn factor')
+    parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
+    parser.add_argument('--activation', type=str, default='gelu', help='activation')
+    parser.add_argument('--output_attention', action='store_true', 
+                        help='whether to output attention in ecoder')
+    parser.add_argument('--patch_len', type=int, default=16, help='patch len for patch_embedding')
+    parser.add_argument('--stride', type=int, default=8, help='stride for patch_embedding')
+    
+    # optimization
+    parser.add_argument('--num_workers', type=int, default=10, help='data loader num workers')
+    parser.add_argument('--train_epochs', type=int, default=10, help='train epochs')
+    parser.add_argument('--batch_size', type=int, default=32, help='batch size of train input data')
+    parser.add_argument('--patience', type=int, default=3, help='early stopping patience')
+    parser.add_argument('--learning_rate', type=float, default=0.0001, help='optimizer learning rate')
+    parser.add_argument('--lradj', type=str, default='type1', help='adjust learning rate')
+    # parser.add_argument('--loss', type=str, default='MSE',
+    #                     help='loss function')
+    
+    # logger
+    parser.add_argument("--log_dir", type=str, default='./log', help="log dir")
+    parser.add_argument("--result_dir", type=str, default='./results', help="result dir")
+    parser.add_argument('--checkpoints', type=str, default='./checkpoints/', 
+                        help='location of model checkpoints')
+    
     # forecasting task
     parser.add_argument('--seq_len', type=int, default=180,
                         help='input sequence length')
@@ -118,45 +131,24 @@ if __name__ == '__main__':
     # parser.add_argument('--seasonal_patterns', type=str,
     #                     default='Monthly', help='subset for M4')
 
-    # model define
-    parser.add_argument('--enc_in', type=int, default=2,
-                        help='encoder input size')
-    parser.add_argument('--c_out', type=int, default=2,
-                        help='编码器输出维度')
-    
-    parser.add_argument('--d_model', type=int, default=512,
-                        help='dimension of model')
-    parser.add_argument('--n_heads', type=int, default=8, help='num of heads')
-    parser.add_argument('--e_layers', type=int, default=2,
-                        help='num of encoder layers')
-    parser.add_argument('--d_ff', type=int, default=2048,
-                        help='dimension of fcn')
-    parser.add_argument('--factor', type=int, default=1, help='attn factor')
-    parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
+    # classification task
+    parser.add_argument('--num_class', type=int, default=3)
 
-    parser.add_argument('--activation', type=str,
-                        default='gelu', help='activation')
-    parser.add_argument('--output_attention', action='store_true',
-                        help='whether to output attention in ecoder')
-    parser.add_argument('--patch_len', type=int, default=16, help='patch len for patch_embedding')
-    parser.add_argument('--stride', type=int, default=8, help='stride for patch_embedding')
-    
-
-    # optimization
-    parser.add_argument('--num_workers', type=int,
-                        default=10, help='data loader num workers')
-    parser.add_argument('--train_epochs', type=int,
-                        default=10, help='train epochs')
-    parser.add_argument('--batch_size', type=int, default=32,
-                        help='batch size of train input data')
-    parser.add_argument('--patience', type=int, default=3,
-                        help='early stopping patience')
-    parser.add_argument('--learning_rate', type=float,
-                        default=0.0001, help='optimizer learning rate')
-    parser.add_argument('--lradj', type=str, default='type1',
-                        help='adjust learning rate')
-    # parser.add_argument('--loss', type=str, default='MSE',
-    #                     help='loss function')
+    # data loader
+    parser.add_argument('--data', type=str, required=True, default='ETTm1', help='dataset type')
+    parser.add_argument('--dataset_name', type=str, required=True, help='dataset name')
+    parser.add_argument('--root_path', type=str, default='./data/ETT/', 
+                        help='root path of the data file')
+    # parser.add_argument('--data_path', type=str,
+    #                     default='ETTh1.csv', help='data file')
+    # parser.add_argument('--features', type=str, default='M',
+    #                     help='forecasting task, options:[M, S, MS]; \
+    #                         M:multivariate predict multivariate, S:univariate predict univariate, \
+    #                             MS:multivariate predict univariate')
+    # parser.add_argument('--freq', type=str, default='h',
+    #                     help='freq for time features encoding, \
+    #                         options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, \
+    #                             w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
 
     # GPU
     parser.add_argument('--use_gpu', type=bool, default=True, help='use gpu')

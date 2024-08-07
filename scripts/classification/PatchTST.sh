@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# root_dir=$(pwd)  # 项目工作路径
+# echo "root_dir: $root_dir"
+
 python -u run_PatchTST.py \
   --task_name classification \
   --root_path ./dataset \

@@ -4,16 +4,18 @@
 在[Time Series Library](https://github.com/thuml/Time-Series-Library)的基础上进行了修改,将每个任务模块进行剥离，让骨干网络和头部模块化，方便做工程项目
 
 # TODO
-[ ] 多GPU支持
+- [ ] 多GPU支持
+- [ ] tensorboard可视化
+- [ ] 各类任务数据集的探索性数据分析(exploratory data analysis)
 
-[-] 对训练代码进行封装,使用者只关注模型的构建
-# 任务类型
+- [x] 对训练代码进行封装
+# Tasks
 
 ## 1. Pretrain
 分离骨干网络,对骨干网络做预训练
-- self-supervised pretrain
-- masked reconstruction pretrain
-- next series prediction pretrain
+- [ ] self-supervised pretrain
+- [ ] masked reconstruction pretrain
+- [ ] next series prediction pretrain
 
 ## 2. Classification
 单变量时序分类和多变量时序分类
