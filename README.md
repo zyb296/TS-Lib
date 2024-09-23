@@ -30,4 +30,8 @@ TODO
 TODO
 
 # Usage
-TODO
+docker 镜像
+```bash
+docker load -i <path_to_docker_image>
+docker run -idt --name=TSlib --shm-size 16G -v /TS-Lib:/opt/TSlib  /bin/bash
+```
