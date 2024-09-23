@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from torch import optim
 import torch.nn as nn
 from tqdm import tqdm
+import logging
+from torch.utils.data import DataLoader
 from utils.tools import EarlyStopping, adjust_learning_rate, cal_accuracy
 from torch.utils.tensorboard import SummaryWriter
 
@@ -13,6 +15,8 @@ from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer,
     Informer, LightTS, Reformer, ETSformer, Pyraformer, PatchTST, MICN, Crossformer, FiLM, iTransformer, \
     Koopa, TiDE, FreTS, TimeMixer, TSMixer, SegRNN, MambaSimple
 
+
+logger = logger.getLogger(__name__)
 
 class Exp_Basic(object):
     def __init__(self, args):
@@ -48,8 +52,7 @@ class Exp_Basic(object):
         self.loss_func = nn.CrossEntropyLoss()
         self.optimizer = self.configure_optimizers()
         self.early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
-        self.logger = args.logger
-        # self.logger.info(f"version path: {self.args.version_path}")
+        # logger.info(f"version path: {self.args.version_path}")
         self._tensorboard_logger()
         self._fold_checkpoint_path()
 
@@ -67,7 +70,7 @@ class Exp_Basic(object):
         else:
             log_path = os.path.join("/root/tf-logs", self.args.version_path, f"fold{self.args.fold}")  # autodl必须放在/root/tf-logs/路径下
         
-        # self.logger.info(f"tensorboard path: {log_path}")
+        # logger.info(f"tensorboard path: {log_path}")
         os.makedirs(log_path, exist_ok=True)
         self.writer = SummaryWriter(log_path)
         # os.system(f"cp -r {self.args.version_path} /root/tf-logs/")
@@ -106,7 +109,7 @@ class Exp_Basic(object):
         os.makedirs(check_point_path, exist_ok=True)
         self.pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
 
-    def validation(self, val_laoder):
+    def validation(self, val_laoder: DataLoader):
         total_loss = []
         self.model.eval()
         with torch.no_grad():
@@ -120,7 +123,7 @@ class Exp_Basic(object):
         self.model.train()
         return total_loss
 
-    def train(self, train_loader, val_loader=None):
+    def train(self, train_loader: DataLoader, val_loader: DataLoader=None) -> None:
         # 模型权重路径
         # check_point_path = os.path.join(self.args.checkpoints, self.args.version)
         # pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
@@ -184,7 +187,7 @@ class Exp_Basic(object):
         # 加载最优模型
         self.model.load_state_dict(torch.load(self.pth_path))
 
-    def test(self, test_loader):
+    def test(self, test_loader: DataLoader):
         # 加载模型
         # check_point_path = os.path.join(self.args.checkpoints, self.args.version)
         # pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
@@ -237,7 +240,7 @@ class Exp_Basic(object):
         trues = trues.flatten().cpu().numpy()
         accuracy = cal_accuracy(predictions, trues)
 
-        self.logger.info('accuracy:{}'.format(accuracy))
+        logger.info('accuracy:{}'.format(accuracy))
         # file_name='result_classification.txt'
         # f = open(os.path.join(folder_path,file_name), 'a')
         # f.write(f"{setting}  fold {self.args.fold}" + "  \n")
@@ -247,7 +250,7 @@ class Exp_Basic(object):
         # f.close()
         return accuracy
 
-    def prediction(self, prediction_loader, version, fold):
+    def prediction(self, prediction_loader:DataLoader, version:str, fold:int):
         # 加载模型
         # best_model_path = os.path.join(self.args.checkpoints, version, f"checkpoint_fold{fold}.pth")
         self.model.load_state_dict(torch.load(self.pth_path))
