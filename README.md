@@ -3,11 +3,13 @@
 
 在[Time Series Library](https://github.com/thuml/Time-Series-Library)的基础上进行了修改,将每个任务模块进行剥离，让骨干网络和头部模块化，方便做工程项目
 
-# TODO
+# Function
 - [ ] 多GPU支持
 - [ ] tensorboard可视化
 - [ ] 各类任务数据集的探索性数据分析(exploratory data analysis)
-
+- [ ] 预训练任务
+- [ ] 数据增强
+ 
 - [x] 对训练代码进行封装
 # Tasks
 

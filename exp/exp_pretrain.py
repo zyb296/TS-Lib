@@ -9,8 +9,10 @@ import torch.nn.functional as F
 from exp.exp_basic import Exp_Basic
 from utils.tools import EarlyStopping, adjust_learning_rate, cal_accuracy
 import warnings
+from typing import List, Tuple
 from utils.losses import MaskedLoss
 from utils.masking import RandomMasker
+
 warnings.filterwarnings('ignore')
 
 
@@ -21,9 +23,9 @@ class Exp_Pretrain(Exp_Basic):
         self.loss_func = MaskedLoss(loss_type='masked')  # full masked hybrid
         self.random_masker = RandomMasker(mask_ratio=0.5, mask_length=30)
         
-        
     def training_step(self, batch_data):
-        batch_x, label = batch_data
+        
+        batch_x, batch_y = batch_data
         batch_x = batch_x.float().to(self.device)
         masked_batch_x, mask = self.random_masker(batch_x)
 
