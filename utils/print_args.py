@@ -1,3 +1,9 @@
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+
 def print_args(args):
     print("\033[1m" + "Basic Config" + "\033[0m")
     print(f'  {"Task Name:":<20}{args.task_name:<20}{"Is Training:":<20}{args.is_training:<20}')
@@ -6,15 +12,18 @@ def print_args(args):
 
     print("\033[1m" + "Data Loader" + "\033[0m")
     print(f'  {"Data:":<20}{args.data:<20}{"Root Path:":<20}{args.root_path:<20}')
-    print(f'  {"Data Path:":<20}{args.data_path:<20}{"Features:":<20}{args.features:<20}')
+    print(
+        f'  {"Data Path:":<20}{args.data_path:<20}{"Features:":<20}{args.features:<20}')
     print(f'  {"Target:":<20}{args.target:<20}{"Freq:":<20}{args.freq:<20}')
     print(f'  {"Checkpoints:":<20}{args.checkpoints:<20}')
     print()
 
     if args.task_name in ['long_term_forecast', 'short_term_forecast']:
         print("\033[1m" + "Forecasting Task" + "\033[0m")
-        print(f'  {"Seq Len:":<20}{args.seq_len:<20}{"Label Len:":<20}{args.label_len:<20}')
-        print(f'  {"Pred Len:":<20}{args.pred_len:<20}{"Seasonal Patterns:":<20}{args.seasonal_patterns:<20}')
+        print(
+            f'  {"Seq Len:":<20}{args.seq_len:<20}{"Label Len:":<20}{args.label_len:<20}')
+        print(
+            f'  {"Pred Len:":<20}{args.pred_len:<20}{"Seasonal Patterns:":<20}{args.seasonal_patterns:<20}')
         print(f'  {"Inverse:":<20}{args.inverse:<20}')
         print()
 
@@ -29,12 +38,14 @@ def print_args(args):
         print()
 
     print("\033[1m" + "Model Parameters" + "\033[0m")
-    print(f'  {"Top k:":<20}{args.top_k:<20}{"Num Kernels:":<20}{args.num_kernels:<20}')
+    print(
+        f'  {"Top k:":<20}{args.top_k:<20}{"Num Kernels:":<20}{args.num_kernels:<20}')
     print(f'  {"Enc In:":<20}{args.enc_in:<20}{"Dec In:":<20}{args.dec_in:<20}')
     print(f'  {"C Out:":<20}{args.c_out:<20}{"d model:":<20}{args.d_model:<20}')
     print(f'  {"n heads:":<20}{args.n_heads:<20}{"e layers:":<20}{args.e_layers:<20}')
     print(f'  {"d layers:":<20}{args.d_layers:<20}{"d FF:":<20}{args.d_ff:<20}')
-    print(f'  {"Moving Avg:":<20}{args.moving_avg:<20}{"Factor:":<20}{args.factor:<20}')
+    print(
+        f'  {"Moving Avg:":<20}{args.moving_avg:<20}{"Factor:":<20}{args.factor:<20}')
     print(f'  {"Distil:":<20}{args.distil:<20}{"Dropout:":<20}{args.dropout:<20}')
     print(f'  {"Embed:":<20}{args.embed:<20}{"Activation:":<20}{args.activation:<20}')
     print(f'  {"Output Attention:":<20}{args.output_attention:<20}')
@@ -55,5 +66,27 @@ def print_args(args):
 
     print("\033[1m" + "De-stationary Projector Params" + "\033[0m")
     p_hidden_dims_str = ', '.join(map(str, args.p_hidden_dims))
-    print(f'  {"P Hidden Dims:":<20}{p_hidden_dims_str:<20}{"P Hidden Layers:":<20}{args.p_hidden_layers:<20}') 
+    print(f'  {"P Hidden Dims:":<20}{p_hidden_dims_str:<20}{"P Hidden Layers:":<20}{args.p_hidden_layers:<20}')
     print()
+
+
+def logging_args(args):
+    # 获取所有属性名
+    arg_names = list(vars(args).keys())
+
+    # 每两个参数记录在一个 info 里面
+    for i in range(0, len(arg_names), 2):
+        # 获取当前的两个参数名和值
+        arg1 = arg_names[i]
+        value1 = getattr(args, arg1)
+        
+        # 检查是否有第二个参数
+        if i + 1 < len(arg_names):
+            arg2 = arg_names[i + 1]
+            value2 = getattr(args, arg2)
+            # logger.info("%-15s: %s | %-15s: %s" % (str(arg1), str(value1), str(arg2), str(value2)))
+            # logger.info("%-15s: %s%s%-15s: %s" % (str(arg1), str(value1), ' ' * 10, str(arg2), str(value2)))
+            logger.info(f'  {arg1:<20}{value1:<20}{arg2:<20}{value2:<20}')
+        else:
+            # 如果只有一个参数，单独记录
+            logger.info(f'  {arg1:<20}{value1:<20}')
