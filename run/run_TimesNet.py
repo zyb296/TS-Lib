@@ -1,6 +1,6 @@
 import os
 import torch
-import random
+import logging
 import argparse
 import numpy as np
 import pandas as pd
@@ -29,18 +29,20 @@ def cross_validation(args):
 
     infer_loader = dataloader.get_loader(mode='predict')
     y = dataloader.train_y
-    print(os.getcwd())
-    submission = pd.read_csv("./dataset/custom_dataset/测试集A/submit_example_A.csv")
     
+    submission = pd.read_csv(
+        "./dataset/custom_dataset/测试集A/submit_example_A.csv")
+
     version, args.version_path = create_version_folder(args.log_dir)
-    print("version path: ", args.version_path)
-    logger = _set_logger(args)
-    args.logger = logger
+    # print("version path: ", args.version_path)
+    # logger = _set_logger(args)
+    # args.logger = logger
     args.version = version
 
     accuracy_list = []
     for fold, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
-        train_loader, val_loader = dataloader.get_loader(train_idx, mode='train', return_val=True)  # 20%用于val
+        train_loader, val_loader = dataloader.get_loader(
+            train_idx, mode='train', return_val=True)  # 20%用于val
         test_loader = dataloader.get_loader(test_idx, mode='test')
 
         args.fold = fold
@@ -73,10 +75,12 @@ def cross_validation(args):
 
     result_dir = f"./results/"
     os.makedirs(result_dir, exist_ok=True)
-    submission.to_csv(f"./results/{args.task_name}_{args.model}_{version}_{mean_acc:.4f}.csv", index=False)
+    submission.to_csv(
+        f"./results/{args.task_name}_{args.model}_{version}_{mean_acc:.4f}.csv", index=False)
 
 
 if __name__ == '__main__':
+    logger = logging.getLogger("run_TimesNet")
     seed = 42
     seed_everything(seed=seed)
 
@@ -89,10 +93,13 @@ if __name__ == '__main__':
                         help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
     parser.add_argument('--model', type=str, required=True, default='Autoformer',
                         help='model name, options: [Autoformer, Transformer, TimesNet]')
-    parser.add_argument('--use_pretrain', action='store_true', default=False, help='是否用预训练网络')
-    parser.add_argument('--pretrain_version', type=int, default=0, help='需要加载的预训练模型版本')
-    parser.add_argument('--pretrain_fold', type=int, default=0, help='预训练模型的第几个fold')
-    
+    parser.add_argument('--use_pretrain', action='store_true',
+                        default=False, help='是否用预训练网络')
+    parser.add_argument('--pretrain_version', type=int,
+                        default=0, help='需要加载的预训练模型版本')
+    parser.add_argument('--pretrain_fold', type=int,
+                        default=0, help='预训练模型的第几个fold')
+
     # data loader
     parser.add_argument('--num_class', type=int, default=3)
     parser.add_argument('--data', type=str, required=True,
@@ -103,74 +110,54 @@ if __name__ == '__main__':
     #                     default='ETTh1.csv', help='data file')
     # parser.add_argument('--features', type=str, default='M',
     #                     help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
-    
+
     parser.add_argument('--checkpoints', type=str,
                         default='./checkpoints/', help='location of model checkpoints')
 
     # forecasting task
-    parser.add_argument('--seq_len', type=int, default=180,
-                        help='input sequence length')
+    parser.add_argument('--seq_len', type=int, default=180, help='input sequence length')
     # parser.add_argument('--label_len', type=int,
     #                     default=48, help='start token length')
-    parser.add_argument('--pred_len', type=int, default=96,
-                        help='prediction sequence length')
+    parser.add_argument('--pred_len', type=int, default=96, help='prediction sequence length')
     # parser.add_argument('--seasonal_patterns', type=str,
     #                     default='Monthly', help='subset for M4')
-    parser.add_argument('--embed', type=str, default='timeF',
-                    help='time features encoding, options:[timeF, fixed, learned]')
-    parser.add_argument('--freq', type=str, default='h',
-                        help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
+    parser.add_argument('--embed', type=str, default='timeF', help='time features encoding, options:[timeF, fixed, learned]')
+    parser.add_argument('--freq', type=str, default='h', help='freq for time features encoding, \
+        options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly],\
+            you can also use more detailed freq like 15min or 3h')
 
     # model define
-    parser.add_argument('--enc_in', type=int, default=2,
-                        help='encoder input size')
-    parser.add_argument('--c_out', type=int, default=2,
-                        help='编码器输出维度')
+    parser.add_argument('--enc_in', type=int, default=2, help='encoder input size')
+    parser.add_argument('--c_out', type=int, default=2, help='编码器输出维度')
     parser.add_argument('--top_k', type=int, default=5, help='for TimesBlock')
-    
-    parser.add_argument('--d_model', type=int, default=512,
-                        help='dimension of model')
+
+    parser.add_argument('--d_model', type=int, default=512, help='dimension of model')
     parser.add_argument('--n_heads', type=int, default=8, help='num of heads')
-    parser.add_argument('--e_layers', type=int, default=2,
-                        help='num of encoder layers')
-    parser.add_argument('--num_kernels', type=int, default=6,
-                        )
-    parser.add_argument('--d_ff', type=int, default=2048,
-                        help='dimension of fcn')
+    parser.add_argument('--e_layers', type=int, default=2, help='num of encoder layers')
+    parser.add_argument('--num_kernels', type=int, default=6)
+    parser.add_argument('--d_ff', type=int, default=2048, help='dimension of fcn')
     parser.add_argument('--factor', type=int, default=1, help='attn factor')
     parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
 
-    parser.add_argument('--activation', type=str,
-                        default='gelu', help='activation')
-    parser.add_argument('--output_attention', action='store_true',
-                        help='whether to output attention in ecoder')
+    parser.add_argument('--activation', type=str, default='gelu', help='activation')
+    parser.add_argument('--output_attention', action='store_true', help='whether to output attention in ecoder')
     parser.add_argument('--patch_len', type=int, default=16, help='patch len for patch_embedding')
     parser.add_argument('--stride', type=int, default=8, help='stride for patch_embedding')
-    
 
     # optimization
-    parser.add_argument('--num_workers', type=int,
-                        default=10, help='data loader num workers')
-    parser.add_argument('--train_epochs', type=int,
-                        default=10, help='train epochs')
-    parser.add_argument('--batch_size', type=int, default=32,
-                        help='batch size of train input data')
-    parser.add_argument('--patience', type=int, default=3,
-                        help='early stopping patience')
-    parser.add_argument('--learning_rate', type=float,
-                        default=0.0001, help='optimizer learning rate')
-    parser.add_argument('--lradj', type=str, default='type1',
-                        help='adjust learning rate')
-    # parser.add_argument('--loss', type=str, default='MSE',
-    #                     help='loss function')
+    parser.add_argument('--num_workers', type=int, default=10, help='data loader num workers')
+    parser.add_argument('--train_epochs', type=int, default=10, help='train epochs')
+    parser.add_argument('--batch_size', type=int, default=32, help='batch size of train input data')
+    parser.add_argument('--patience', type=int, default=3, help='early stopping patience')
+    parser.add_argument('--learning_rate', type=float, default=0.0001, help='optimizer learning rate')
+    parser.add_argument('--lradj', type=str, default='type1', help='adjust learning rate')
+    # parser.add_argument('--loss', type=str, default='MSE', help='loss function')
 
     # GPU
     parser.add_argument('--use_gpu', type=bool, default=True, help='use gpu')
     parser.add_argument('--gpu', type=int, default=0, help='gpu')
-    # parser.add_argument('--use_multi_gpu', action='store_true',
-    #                     help='use multiple gpus', default=False)
-    # parser.add_argument('--devices', type=str,
-    #                     default='0,1,2,3', help='device ids of multile gpus')
+    # parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
+    # parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multile gpus')
 
     args = parser.parse_args()
     # args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
