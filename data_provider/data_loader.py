@@ -111,8 +111,55 @@ class Dataset_ETT_hour(Dataset):
 
 class Dataset_ETT_minute(Dataset):
     def __init__(self, args, root_path, flag='train', size=None,
-                 features='S', data_path='ETTm1.csv',
-                 target='OT', scale=True, timeenc=0, freq='t', seasonal_patterns=None):
+                 features='M', data_path='ETTm1.csv',
+                 target='OT', scale=True, 
+                 timeenc=0, freq='t'):
+        """ETTm1 dataset, one point per 15 minutes.
+
+        Parameters
+        ----------
+        args (_type_): _description_
+        
+        root_path : str,  Root directory of data.
+        
+        flag : str, optional, default='train'.
+            data type, 'train', 'val', or 'test'
+        
+        size : Tuple[int, int, int] or None, default=None.
+            seq_len, label_len, pred_len, 
+            if None, use predefined in [24*4*4, 24*4, 24*4]
+            
+        features: str, default='M', options:[M, S, MS].
+            M: multivariate predict multivariate, 
+            S: univariate predict univariate, 
+            MS: multivariate predict univariate.
+            
+        data_path: str, optional, default='ETTm1.csv'.
+        
+        target: str, default='OT'.
+            The predict value "oil temperature".
+        
+        scale : bool, default=True.
+            Whether to scale data with StandardScaler.
+        
+        timeenc : int, optional, default=0.
+            0: time features, include mounth, day, weekday, hour, minute,
+            1: apply time_features function.
+            
+        freq : str, optional, default='t'.
+            freq for time features encoding, options:[
+            s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, 
+            m:monthly], you can also use more detailed freq like 15min or 3h.
+            
+        Return
+        ----------
+        Tuple of Tensor: (seq_x, seq_y, seq_x_mark, seq_y_mark)
+        seq_x: 
+        seq_y: 
+        seq_x_mark: 
+        seq_y_mark:  
+        
+        """
         # size [seq_len, label_len, pred_len]
         self.args = args
         # info
@@ -143,18 +190,23 @@ class Dataset_ETT_minute(Dataset):
         self.scaler = StandardScaler()
         df_raw = pd.read_csv(os.path.join(self.root_path,
                                           self.data_path))
-
+        # split train, val, test
+        # border1s: [0, 34176, 45696], 
+        # border2s: [34560, 46080, 57600]
         border1s = [0, 12 * 30 * 24 * 4 - self.seq_len, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4 - self.seq_len]
         border2s = [12 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 8 * 30 * 24 * 4]
+        print(f"border1s: {border1s}, border2s: {border2s}")
         border1 = border1s[self.set_type]
         border2 = border2s[self.set_type]
-
+        
+        # forecasting task
         if self.features == 'M' or self.features == 'MS':
-            cols_data = df_raw.columns[1:]
+            cols_data = df_raw.columns[1:]  # except date
             df_data = df_raw[cols_data]
         elif self.features == 'S':
-            df_data = df_raw[[self.target]]
-
+            df_data = df_raw[[self.target]]  # only target
+            
+        # data scale
         if self.scale:
             train_data = df_data[border1s[0]:border2s[0]]
             self.scaler.fit(train_data.values)
@@ -162,6 +214,7 @@ class Dataset_ETT_minute(Dataset):
         else:
             data = df_data.values
 
+        # time features: mounth, day, weekday, hour, minute
         df_stamp = df_raw[['date']][border1:border2]
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
         if self.timeenc == 0:
@@ -170,8 +223,8 @@ class Dataset_ETT_minute(Dataset):
             df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
             df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
             df_stamp['minute'] = df_stamp.date.apply(lambda row: row.minute, 1)
-            df_stamp['minute'] = df_stamp.minute.map(lambda x: x // 15)
-            data_stamp = df_stamp.drop(['date'], 1).values
+            df_stamp['minute'] = df_stamp.minute.map(lambda x: x // 15)  # [0, 15, 30, 45] -> [0, 1, 2, 3]
+            data_stamp = df_stamp.drop(['date'], axis=1).values
         elif self.timeenc == 1:
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
@@ -179,12 +232,20 @@ class Dataset_ETT_minute(Dataset):
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
 
+        # data augmentation
         if self.set_type == 0 and self.args.augmentation_ratio > 0:
             self.data_x, self.data_y, augmentation_tags = run_augmentation_single(self.data_x, self.data_y, self.args)
 
         self.data_stamp = data_stamp
 
     def __getitem__(self, index):
+        """
+        |------|----------seq_y-----------|
+        |------|--label_len--|--pred_len--|
+        |---------------------------------|
+        |-------seq_len------|
+        |-------seq_x--------|
+        """
         s_begin = index
         s_end = s_begin + self.seq_len
         r_begin = s_end - self.label_len
