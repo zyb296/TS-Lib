@@ -1,10 +1,15 @@
+from sympy import im
 import torch
+import logging
 import torch.nn as nn
 from torch import Tensor
 import torch.nn.functional as F
 import torch.fft
 from layers.Embed import DataEmbedding
 from layers.Conv_Blocks import Inception_Block_V1
+
+
+logger = logging.getLogger("TimesNet")
 
 
 def FFT_for_Period(x, k=2):
@@ -82,25 +87,24 @@ class Model(nn.Module):
     Paper link: https://openreview.net/pdf?id=ju_Uqw384Oq
     """
 
-    def __init__(self, configs,
-                 seq_len: int,
-                 e_layers: int,
-                 enc_in: int,
-                 d_model: int,
-                 d_ff: int,
-                 num_kernels: int,
-                 dropout: float,
-                 top_k: int = 2,
-                 ) -> None:
+    def __init__(self, configs) -> None:
         super(Model, self).__init__()
         # self.configs = configs
+        seq_len = configs.seq_len
+        e_layers = configs.e_layers
+        enc_in = configs.enc_in
+        d_model = configs.d_model
+        d_ff = configs.d_ff
+        num_kernels = configs.num_kernels
+        dropout = configs.dropout
+        top_k = configs.top_k
         self.task_name = configs.task_name
         self.seq_len = seq_len
         pred_len = 0  # changed in forcasting task
         if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':
             self.label_len = configs.label_len
             self.pred_len = configs.pred_len
-        self.model = nn.ModuleList([TimesBlock(seq_len=seq_len, pred_len=pred_len, d_model=d_model, 
+        self.model = nn.ModuleList([TimesBlock(seq_len=seq_len, pred_len=self.pred_len, d_model=d_model, 
                                                d_ff=d_ff, num_kernels=num_kernels, top_k=top_k) 
                                     for _ in range(e_layers)])
         self.enc_embedding = DataEmbedding(enc_in, d_model, configs.embed, configs.freq, dropout)

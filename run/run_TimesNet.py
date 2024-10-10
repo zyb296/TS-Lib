@@ -12,12 +12,15 @@ import pandas as pd
 # from exp.exp_classification import Exp_Classification
 from exp.exp_basic import Exp_Basic
 from exp.exp_classification import Exp_Classification
-from utils.print_args import print_args
+from exp.exp_long_term_forecasting import Exp_Long_Term_Forecasting
+from utils.print_args import print_args, logging_args
 
 from sklearn.model_selection import StratifiedKFold
-from data_provider.cus_dataloader import MyDataLoader
-from utils.my_logger import Logger
+# from data_provider.cus_dataloader import MyDataLoader
+from data_provider.data_factory import data_provider
+# from utils.my_logger import Logger
 from utils.tools import create_version_folder, _set_logger, seed_everything
+from utils.logging_config import setup_logging
 
 
 def cross_validation(args):
@@ -81,9 +84,17 @@ def cross_validation(args):
     
 def main(args):
     
+    model = Exp_Long_Term_Forecasting(args)
+    
+    train_set, train_loader = data_provider(args, flag='train')
+    val_set, val_loader = data_provider(args, flag='train')
+    
+    model.train(train_loader, val_loader)
+    
 
 
 if __name__ == '__main__':
+    setup_logging()
     logger = logging.getLogger("run_TimesNet")
     seed = 42
     seed_everything(seed=seed)
@@ -105,7 +116,6 @@ if __name__ == '__main__':
                         default=0, help='预训练模型的第几个fold')
 
     # data loader
-    parser.add_argument('--num_class', type=int, default=3)
     parser.add_argument('--data', type=str, required=True,
                         default='ETTm1', help='dataset type')
     parser.add_argument('--root_path', type=str,
@@ -119,11 +129,12 @@ if __name__ == '__main__':
                         default='./checkpoints/', help='location of model checkpoints')
 
     # forecasting task
+    parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
     parser.add_argument('--label_len', type=int,
                         default=48, help='start token length')
     parser.add_argument('--pred_len', type=int, default=96, help='prediction sequence length')
-    # parser.add_argument('--seasonal_patterns', type=str,
-    #                     default='Monthly', help='subset for M4')
+    parser.add_argument('--seasonal_patterns', type=str,
+                        default='Monthly', help='subset for M4')
     parser.add_argument('--embed', type=str, default='timeF', help='time features encoding, options:[timeF, fixed, learned]')
     parser.add_argument('--freq', type=str, default='h', help='freq for time features encoding, \
         options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly],\
@@ -143,7 +154,8 @@ if __name__ == '__main__':
     
     # parser.add_argument('--n_heads', type=int, default=8, help='num of heads')
     
-    
+    # Augmentation
+    parser.add_argument('--augmentation_ratio', type=int, default=0, help="How many times to augment")
     
     # parser.add_argument('--factor', type=int, default=1, help='attn factor')
     
@@ -161,6 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=0.0001, help='optimizer learning rate')
     parser.add_argument('--lradj', type=str, default='type1', help='adjust learning rate')
     # parser.add_argument('--loss', type=str, default='MSE', help='loss function')
+    parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)
 
     # GPU
     parser.add_argument('--use_gpu', type=bool, default=True, help='use gpu')
@@ -171,6 +184,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
     args.use_gpu = True if torch.cuda.is_available() else False
+    
+    # 记录参数
+    logger.info("Parsed arguments:")
+    logging_args(args)
+
 
     # if args.use_gpu and args.use_multi_gpu:
     #     args.devices = args.devices.replace(' ', '')
@@ -179,3 +197,4 @@ if __name__ == '__main__':
     #     args.gpu = args.device_ids[0]
 
     # cross_validation(args)
+    main(args)
