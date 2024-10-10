@@ -16,7 +16,7 @@ from models import Autoformer, Transformer, TimesNet, Nonstationary_Transformer,
     Koopa, TiDE, FreTS, TimeMixer, TSMixer, SegRNN, MambaSimple
 
 
-logger = logger.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class Exp_Basic(object):
     def __init__(self, args):
@@ -52,9 +52,10 @@ class Exp_Basic(object):
         self.loss_func = nn.CrossEntropyLoss()
         self.optimizer = self.configure_optimizers()
         self.early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
+        self.writer = None
         # logger.info(f"version path: {self.args.version_path}")
-        self._tensorboard_logger()
-        self._fold_checkpoint_path()
+        # self._tensorboard_logger()
+        # self._fold_checkpoint_path()
 
     def _build_model(self):
         model = self.model_dict[self.args.model].Model(self.args).float()
@@ -79,9 +80,8 @@ class Exp_Basic(object):
 
         if torch.cuda.is_available():
             device = torch.device("cuda")
-        elif torch.backends.mps.is_available():
-            
-            device = torch.device("mps")
+        # elif torch.backends.mps.is_available():
+        #     device = torch.device("mps")
         else:
             device = torch.device("cpu")
 
@@ -157,6 +157,7 @@ class Exp_Basic(object):
                     speed = (time.time() - time_now) / iter_count
                     left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
                     print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
+                    logger.info('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
                     iter_count = 0
                     time_now = time.time()
 
@@ -165,21 +166,22 @@ class Exp_Basic(object):
                 self.optimizer.step()
                 # 记录 train loss
                 global_step += 1
-                if global_step % 20 == 0:  # 每20个step记录一次train loss
+                if global_step % 20 == 0 and self.writer is not None:  # 每20个step记录一次train loss
                     self.writer.add_scalar("Loss/train", loss.item(), global_step)
                 
-            print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+            logger.info("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             
             # train and val loss
             train_loss = np.average(train_loss)
             val_loss = self.validation(val_loader)
-            print(f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.3f} Vali Loss: {val_loss:.3f}")
-            self.writer.add_scalar("Loss/val", val_loss, global_step)
+            logger.info(f"Epoch: {epoch + 1}, Steps: {train_steps} | Train Loss: {train_loss:.3f} Vali Loss: {val_loss:.3f}")
+            if self.writer is not None:
+                self.writer.add_scalar("Loss/val", val_loss, global_step)
             
             # early-stopping and asjust learning rate
             self.early_stopping(val_loss, self.model, self.pth_path)
             if self.early_stopping.early_stop:
-                print("Early stopping")
+                logger.info("Early stopping")
                 break
             if (epoch + 1) % 5 == 0:
                 adjust_learning_rate(self.optimizer, epoch + 1, self.args)

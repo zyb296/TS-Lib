@@ -25,8 +25,10 @@
 ## 3. Regression
 TODO
 
-## 4. Prediction
-TODO
+## 4. Forecasting
+```
+sh scripts/long_term_forecast/TimesNet_ETTm1.sh
+```
 
 ## 5. Imputation
 TODO

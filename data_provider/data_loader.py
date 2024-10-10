@@ -113,7 +113,8 @@ class Dataset_ETT_minute(Dataset):
     def __init__(self, args, root_path, flag='train', size=None,
                  features='M', data_path='ETTm1.csv',
                  target='OT', scale=True, 
-                 timeenc=0, freq='t'):
+                 timeenc=0, freq='t',
+                 seasonal_patterns=None):
         """ETTm1 dataset, one point per 15 minutes.
 
         Parameters
@@ -195,7 +196,7 @@ class Dataset_ETT_minute(Dataset):
         # border2s: [34560, 46080, 57600]
         border1s = [0, 12 * 30 * 24 * 4 - self.seq_len, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4 - self.seq_len]
         border2s = [12 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 4 * 30 * 24 * 4, 12 * 30 * 24 * 4 + 8 * 30 * 24 * 4]
-        print(f"border1s: {border1s}, border2s: {border2s}")
+        # print(f"border1s: {border1s}, border2s: {border2s}")
         border1 = border1s[self.set_type]
         border2 = border2s[self.set_type]
         
@@ -256,7 +257,8 @@ class Dataset_ETT_minute(Dataset):
         seq_x_mark = self.data_stamp[s_begin:s_end]
         seq_y_mark = self.data_stamp[r_begin:r_end]
 
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
+        return torch.from_numpy(seq_x), torch.from_numpy(seq_y), \
+            torch.from_numpy(seq_x_mark), torch.from_numpy(seq_y_mark)
 
     def __len__(self):
         return len(self.data_x) - self.seq_len - self.pred_len + 1
