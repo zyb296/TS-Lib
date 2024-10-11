@@ -88,8 +88,10 @@ def main(args):
     
     train_set, train_loader = data_provider(args, flag='train')
     val_set, val_loader = data_provider(args, flag='train')
+    test_set, test_loader = data_provider(args, flag='test')
     
     model.train(train_loader, val_loader)
+    model.test(test_loader)
     
 
 
@@ -102,6 +104,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='NSTransformer')
 
     # basic config
+    parser.add_argument("--version", type=int, default=1, help="version of runing")
     parser.add_argument("--seed", type=int, default=seed, help="随机种子")
     parser.add_argument("--log_dir", type=str, default='./log', help="日志记录路径")
     parser.add_argument('--task_name', type=str, required=True, default='long_term_forecast',

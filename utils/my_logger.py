@@ -13,7 +13,10 @@ class Logger:
         'crit': logging.CRITICAL
     }  # 日志关系映射
 
-    def __init__(self, filename, level='info', backCount=10, fmt='%(asctime)s %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s'):
+    def __init__(self, filename, 
+                 level='info', 
+                 backCount=10, 
+                 fmt='%(asctime)s %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s'):
         # fmt = '%(asctime)s %(thread)d %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s'
         # fmt = '%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'
         # fmt = '%(asctime)s Thread:%(thread)d %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s'

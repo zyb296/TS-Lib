@@ -5,6 +5,7 @@
 
 python -u run_PatchTST.py \
   --task_name classification \
+  --dataset_name UCR \
   --root_path ./dataset \
   --model PatchTST \
   --log_dir ./log/patchTST \

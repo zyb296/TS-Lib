@@ -1,18 +1,24 @@
 import os
 import torch
-import random
 import argparse
+import logging
 import numpy as np
 import pandas as pd
 # from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
 # from exp.exp_imputation import Exp_Imputation
 # from exp.exp_short_term_forecasting import Exp_Short_Term_Forecast
 # from exp.exp_anomaly_detection import Exp_Anomaly_Detection
-from exp.exp_basic import Exp_Basic
-from exp.exp_classification import Exp_Classification
+# from exp.exp_basic import Exp_Basic
+# from exp.exp_classification import Exp_Classification
 from sklearn.model_selection import StratifiedKFold
 from data_provider.cus_dataloader import MyDataLoader
-from utils.tools import create_version_folder, _set_logger, seed_everything
+from utils.tools import create_version_folder, seed_everything#, _set_logger
+from utils.logging_config import setup_logging
+
+
+# init logger
+setup_logging()
+logger = logging.getLogger("run_PatchTST")
 
 
 def cross_validation(args):
@@ -29,8 +35,8 @@ def cross_validation(args):
     
     version, args.version_path = create_version_folder(args.log_dir)
     print("version path: ", args.version_path)
-    logger = _set_logger(args)
-    args.logger = logger
+    # logger = _set_logger(args)
+    # args.logger = logger
     args.version = version
 
     accuracy_list = []

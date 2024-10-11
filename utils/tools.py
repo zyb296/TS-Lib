@@ -1,5 +1,5 @@
 import os
-
+import logging
 import numpy as np
 import torch
 import random
@@ -9,7 +9,7 @@ import math
 from utils.my_logger import Logger
 
 plt.switch_backend('agg')
-
+logger = logging.getLogger(__name__)
 
 def adjust_learning_rate(optimizer, epoch, args):
     # lr = args.learning_rate * (0.2 ** (epoch // 2))
@@ -56,7 +56,7 @@ class EarlyStopping:
 
     def save_checkpoint(self, val_loss, model, pth_path):
         if self.verbose:
-            print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+            logger.info(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
         torch.save(model.state_dict(), pth_path)
         self.val_loss_min = val_loss
 

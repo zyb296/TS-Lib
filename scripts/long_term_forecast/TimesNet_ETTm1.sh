@@ -13,6 +13,7 @@ python -u $file_path/run_TimesNet.py \
   --model $model_name \
   --data ETTm1 \
   --features M \
+  --train_epochs 5 \
   --batch_size 32 \
   --seq_len 96 \
   --label_len 48 \
@@ -23,3 +24,4 @@ python -u $file_path/run_TimesNet.py \
   --d_model 64 \
   --d_ff 64 \
   --top_k 5 \
+  --version 1

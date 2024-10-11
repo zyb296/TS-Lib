@@ -55,7 +55,7 @@ class Exp_Basic(object):
         self.writer = None
         # logger.info(f"version path: {self.args.version_path}")
         # self._tensorboard_logger()
-        # self._fold_checkpoint_path()
+        self.set_checkpoint_path()
 
     def _build_model(self):
         model = self.model_dict[self.args.model].Model(self.args).float()
@@ -77,25 +77,31 @@ class Exp_Basic(object):
         # os.system(f"cp -r {self.args.version_path} /root/tf-logs/")
 
     def _acquire_device(self):
-
         if torch.cuda.is_available():
             device = torch.device("cuda")
         # elif torch.backends.mps.is_available():
         #     device = torch.device("mps")
         else:
             device = torch.device("cpu")
-
-        # if self.args.use_gpu:
-        #     os.environ["CUDA_VISIBLE_DEVICES"] = str(
-        #         self.args.gpu) if not self.args.use_multi_gpu else self.args.devices
-        #     device = torch.device('cuda:{}'.format(self.args.gpu))
-        #     print('Use GPU: cuda:{}'.format(self.args.gpu))
-        # else:
-        #     device = torch.device('cpu')
-        #     print('Use CPU')
         return device
     
-    def _fold_checkpoint_path(self):
+    def set_checkpoint_path(self):
+        """设置checkpoint路径
+        包括: 
+        不同的数据集: data
+        不同的模型: model
+        是否是预训练: pretrain
+        不同的版本: version
+        多折交叉验证的fold: fold
+        """
+        V = "v"+str(self.args.version)
+        data_name = str(self.args.data)
+        model_name = str(self.args.model)
+        
+        if self.args.task_name == 'pretrain':
+            check_point_path = os.path.join(self.args.checkpoints, "pretrain", self.args.version)
+        elif self.args.task_name == 'finetune':
+            check_point_path = os.path.join(self.args.checkpoints, "finetune", self.args.version)
         if self.args.task_name == 'pretrain':
             check_point_path = os.path.join(self.args.checkpoints, "pretrain", self.args.version)
         elif self.args.task_name == 'finetune':
@@ -104,10 +110,12 @@ class Exp_Basic(object):
             # if self.args.use_pretrain:
             #     check_point_path = os.path.join(self.args.checkpoints, "finetune", self.args.version)
             # else:
-            check_point_path = os.path.join(self.args.checkpoints, self.args.version)
+            check_point_path = os.path.join(self.args.checkpoints, data_name, model_name, V)
             
         os.makedirs(check_point_path, exist_ok=True)
-        self.pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
+        # TODO 是否添加fold标记
+        fold = 0
+        self.pth_path = os.path.join(check_point_path, f"checkpoint_fold{fold}.pth")
 
     def validation(self, val_laoder: DataLoader):
         total_loss = []
@@ -157,7 +165,6 @@ class Exp_Basic(object):
                     speed = (time.time() - time_now) / iter_count
                     left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
                     print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
-                    logger.info('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
                     iter_count = 0
                     time_now = time.time()
 
@@ -190,10 +197,13 @@ class Exp_Basic(object):
         self.model.load_state_dict(torch.load(self.pth_path))
 
     def test(self, test_loader: DataLoader):
-        # 加载模型
+        # load model
+        # TODO 要不要指定加载哪个模型
         # check_point_path = os.path.join(self.args.checkpoints, self.args.version)
         # pth_path = os.path.join(check_point_path, f"checkpoint_fold{self.args.fold}.pth")
-        self.model.load_state_dict(torch.load(self.pth_path))
+        loaded_pth = self.pth_path
+        logger.info(f"Loading model from {loaded_pth}")
+        self.model.load_state_dict(torch.load(loaded_pth))
         
         preds = []
         trues = []
