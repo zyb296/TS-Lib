@@ -84,7 +84,7 @@ class TemporalEmbedding(nn.Module):
         """
         super(TemporalEmbedding, self).__init__()
 
-        minute_size = 4
+        minute_size = 4  # 4 points in an hour
         hour_size = 24
         weekday_size = 7
         day_size = 32
