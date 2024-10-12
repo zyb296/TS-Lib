@@ -31,12 +31,12 @@ class TimesBlock(nn.Module):
         r"""Times Block
 
         Args:
-            seq_len (int): the length of input sequence
-            pred_len (int): the length of prediction sequence
-            d_model (int): _description_
-            d_ff (int): _description_
-            num_kernels (int): _description_
-            top_k (int): _description_
+            seq_len (int): Length of input sequence
+            pred_len (int): Length of forecasting sequence
+            d_model (int): Embedding dimension
+            d_ff (int):  Output and Input dimension of Inception block
+            num_kernels (int): Number of kernels in Inception block
+            top_k (int): 
         """
         super(TimesBlock, self).__init__()
         self.seq_len = seq_len
@@ -124,7 +124,7 @@ class Model(nn.Module):
             self.projection = nn.Linear(d_model * seq_len, configs.num_class)
 
     def forecast(self, x_enc: Tensor, x_mark_enc: Tensor) -> Tensor:
-        """_summary_
+        """forecasting task
 
         Args:
             x_enc (Tensor): (batch_size, seq_len, n_vars)
@@ -141,9 +141,10 @@ class Model(nn.Module):
         x_enc /= stdev
 
         # embedding
-        enc_out = self.enc_embedding(x_enc, x_mark_enc)  # [B,T,C]
-        enc_out = self.predict_linear(enc_out.permute(0, 2, 1)).permute(
-            0, 2, 1)  # align temporal dimension, (B, L+pred_len, embed_dim)
+        enc_out = self.enc_embedding(x_enc, x_mark_enc)  # (B, L, d_model)
+        enc_out = self.predict_linear(enc_out.permute(0, 2, 1)).permute(0, 2, 1)  
+        # align temporal dimension, (B, L+pred_len, d_model)
+        
         # TimesNet
         for i in range(self.layer):
             enc_out = self.layer_norm(self.model[i](enc_out))
