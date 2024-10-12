@@ -103,6 +103,12 @@ class Exp_Long_Term_Forecasting(Exp_Basic):
         logger.info(f"Loading model from {loaded_pth}")
         self.model.load_state_dict(torch.load(loaded_pth))
         test_data = test_loader.dataset
+        
+        # result save
+        setting = f"{self.args.data}_{self.args.model}_{str(self.args.version)}"
+        folder_path = './results/' + setting + '/'
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
 
         preds = []
         trues = []
@@ -151,7 +157,7 @@ class Exp_Long_Term_Forecasting(Exp_Basic):
                         input = test_data.inverse_transform(input.reshape(shape[0] * shape[1], -1)).reshape(shape)
                     gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
                     pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                    visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+                    visual(gt, pd, os.path.join(folder_path, str(i) + '.png'))
 
         preds = np.concatenate(preds, axis=0)
         trues = np.concatenate(trues, axis=0)
@@ -160,11 +166,6 @@ class Exp_Long_Term_Forecasting(Exp_Basic):
         trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
         print('test shape:', preds.shape, trues.shape)
 
-        # result save
-        setting = f"{self.args.dataset}_{self.args.model}_{str(self.args.version)}"
-        folder_path = './results/' + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
         
         # dtw calculation
         if self.args.use_dtw:

@@ -23,63 +23,63 @@ from utils.tools import create_version_folder, _set_logger, seed_everything
 from utils.logging_config import setup_logging
 
 
-def cross_validation(args):
+# def cross_validation(args):
 
-    skf = StratifiedKFold(n_splits=5, random_state=42, shuffle=True)
+#     skf = StratifiedKFold(n_splits=5, random_state=42, shuffle=True)
 
-    # dataloader
-    dataloader = MyDataLoader(args)
+#     # dataloader
+#     dataloader = MyDataLoader(args)
 
-    infer_loader = dataloader.get_loader(mode='predict')
-    y = dataloader.train_y
+#     infer_loader = dataloader.get_loader(mode='predict')
+#     y = dataloader.train_y
     
-    submission = pd.read_csv(
-        "./dataset/custom_dataset/测试集A/submit_example_A.csv")
+#     submission = pd.read_csv(
+#         "./dataset/custom_dataset/测试集A/submit_example_A.csv")
 
-    version, args.version_path = create_version_folder(args.log_dir)
-    # print("version path: ", args.version_path)
-    # logger = _set_logger(args)
-    # args.logger = logger
-    args.version = version
+#     version, args.version_path = create_version_folder(args.log_dir)
+#     # print("version path: ", args.version_path)
+#     # logger = _set_logger(args)
+#     # args.logger = logger
+#     args.version = version
 
-    accuracy_list = []
-    for fold, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
-        train_loader, val_loader = dataloader.get_loader(
-            train_idx, mode='train', return_val=True)  # 20%用于val
-        test_loader = dataloader.get_loader(test_idx, mode='test')
+#     accuracy_list = []
+#     for fold, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
+#         train_loader, val_loader = dataloader.get_loader(
+#             train_idx, mode='train', return_val=True)  # 20%用于val
+#         test_loader = dataloader.get_loader(test_idx, mode='test')
 
-        args.fold = fold
-        logger.info(f"=================== fold {fold} ===================")
+#         args.fold = fold
+#         logger.info(f"=================== fold {fold} ===================")
 
-        # backbone
+#         # backbone
 
-        # model
-        Exp = Exp_Classification
-        model = Exp(args)  # set experiments
+#         # model
+#         Exp = Exp_Classification
+#         model = Exp(args)  # set experiments
 
-        # train val test
-        logger.info(f'>>>>>>> start training <<<<<<<<<<<<')
-        model.train(train_loader, val_loader)
+#         # train val test
+#         logger.info(f'>>>>>>> start training <<<<<<<<<<<<')
+#         model.train(train_loader, val_loader)
 
-        logger.info(f'>>>>>>> start testing <<<<<<<<<<<<')
-        accuracy = model.test(test_loader)
-        accuracy_list.append(accuracy)
+#         logger.info(f'>>>>>>> start testing <<<<<<<<<<<<')
+#         accuracy = model.test(test_loader)
+#         accuracy_list.append(accuracy)
 
-        print(f'>>>>>>> prediction <<<<<<<<<<<<')
-        predictions = model.prediction(infer_loader, version, fold)
-        submission[f"fold_{fold}"] = predictions
-        torch.cuda.empty_cache()
+#         print(f'>>>>>>> prediction <<<<<<<<<<<<')
+#         predictions = model.prediction(infer_loader, version, fold)
+#         submission[f"fold_{fold}"] = predictions
+#         torch.cuda.empty_cache()
 
-    mean_acc = np.mean(accuracy_list)
-    logger.info(f"平均accuracy: {mean_acc}")
-    # 计算每一行的众数
-    submission['label'] = submission.iloc[:, -5:].mode(axis=1).iloc[:, 0].astype(int)
-    submission = submission.iloc[:, :2]
+#     mean_acc = np.mean(accuracy_list)
+#     logger.info(f"平均accuracy: {mean_acc}")
+#     # 计算每一行的众数
+#     submission['label'] = submission.iloc[:, -5:].mode(axis=1).iloc[:, 0].astype(int)
+#     submission = submission.iloc[:, :2]
 
-    result_dir = f"./results/"
-    os.makedirs(result_dir, exist_ok=True)
-    submission.to_csv(
-        f"./results/{args.task_name}_{args.model}_{version}_{mean_acc:.4f}.csv", index=False)
+#     result_dir = f"./results/"
+#     os.makedirs(result_dir, exist_ok=True)
+#     submission.to_csv(
+#         f"./results/{args.task_name}_{args.model}_{version}_{mean_acc:.4f}.csv", index=False)
     
     
 def main(args):
@@ -98,6 +98,7 @@ def main(args):
 if __name__ == '__main__':
     setup_logging()
     logger = logging.getLogger("run_TimesNet")
+    logger.info("      >>>>>>> Start <<<<<<<<<<<<     ")
     seed = 42
     seed_everything(seed=seed)
 
@@ -205,4 +206,8 @@ if __name__ == '__main__':
     #     args.gpu = args.device_ids[0]
 
     # cross_validation(args)
-    main(args)
+    try:
+        main(args)
+    except Exception as e:
+        logger.error(e)
+    logger.info("=="*10 + "Finished!" + "=="*10)

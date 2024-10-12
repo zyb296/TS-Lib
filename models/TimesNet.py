@@ -124,6 +124,15 @@ class Model(nn.Module):
             self.projection = nn.Linear(d_model * seq_len, configs.num_class)
 
     def forecast(self, x_enc: Tensor, x_mark_enc: Tensor) -> Tensor:
+        """_summary_
+
+        Args:
+            x_enc (Tensor): (batch_size, seq_len, n_vars)
+            x_mark_enc (Tensor): (batch_size, seq_len, 4) 4: time dimension
+
+        Returns:
+            dec_out (Tensor): (batch_size, pred_len, n_vars)
+        """
         # Normalization from Non-stationary Transformer
         means = x_enc.mean(1, keepdim=True).detach()
         x_enc = x_enc - means
@@ -134,7 +143,7 @@ class Model(nn.Module):
         # embedding
         enc_out = self.enc_embedding(x_enc, x_mark_enc)  # [B,T,C]
         enc_out = self.predict_linear(enc_out.permute(0, 2, 1)).permute(
-            0, 2, 1)  # align temporal dimension
+            0, 2, 1)  # align temporal dimension, (B, L+pred_len, embed_dim)
         # TimesNet
         for i in range(self.layer):
             enc_out = self.layer_norm(self.model[i](enc_out))
