@@ -2,8 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import weight_norm
+from torch import Tensor
 import math
 
+__all__ = ['PositionalEmbedding', 'TokenEmbedding', 'FixedEmbedding', 
+           'TemporalEmbedding', 'DataEmbedding', 'DataEmbedding_inverted',
+           'DataEmbedding_wo_pos', 'PatchEmbedding']
 
 class PositionalEmbedding(nn.Module):
     def __init__(self, d_model, max_len=5000):
@@ -65,6 +69,19 @@ class FixedEmbedding(nn.Module):
 
 class TemporalEmbedding(nn.Module):
     def __init__(self, d_model, embed_type='fixed', freq='h'):
+        """Temporal Embedding.
+
+        Args:
+            d_model (int): Embedding size
+            embed_type (str, optional): Embedding type. 
+                'fiexed' or nn.Embedding. Defaults to 'fixed'.
+            freq (str, optional): Whether to embed minute. Defaults to 'h'.
+                't': embeding minute
+            
+        Shape:
+            - Input: (B, L, 5)
+            - Output: (B, L, d_model)
+        """
         super(TemporalEmbedding, self).__init__()
 
         minute_size = 4
@@ -81,7 +98,7 @@ class TemporalEmbedding(nn.Module):
         self.day_embed = Embed(day_size, d_model)
         self.month_embed = Embed(month_size, d_model)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         x = x.long()
         minute_x = self.minute_embed(x[:, :, 4]) if hasattr(
             self, 'minute_embed') else 0.
