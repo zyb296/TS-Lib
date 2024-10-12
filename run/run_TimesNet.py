@@ -143,6 +143,7 @@ if __name__ == '__main__':
         options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly],\
             you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--c_out', type=int, default=2, help='embedding dim of encoder')
+    parser.add_argument('--inverse', action='store_true', help='inverse output data', default=False)
 
     # model define
     parser.add_argument('--seq_len', type=int, default=180, help='input sequence length')
