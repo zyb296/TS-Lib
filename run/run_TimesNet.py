@@ -178,6 +178,10 @@ if __name__ == '__main__':
     parser.add_argument('--lradj', type=str, default='type1', help='adjust learning rate')
     # parser.add_argument('--loss', type=str, default='MSE', help='loss function')
     parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)
+    
+    # metrics (dtw)
+    parser.add_argument('--use_dtw', type=bool, default=False, 
+                        help='the controller of using dtw metric (dtw is time consuming, not suggested unless necessary)')
 
     # GPU
     parser.add_argument('--use_gpu', type=bool, default=True, help='use gpu')
